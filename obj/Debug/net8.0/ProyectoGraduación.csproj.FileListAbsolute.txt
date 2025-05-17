@@ -5,3 +5,4 @@ C:\Users\ferna\source\repos\ProyectoGraduación\ProyectoGraduación\obj\Debug\ne
 C:\Users\ferna\source\repos\ProyectoGraduación\ProyectoGraduación\obj\Debug\net8.0\ProyectoGraduación.csproj.CoreCompileInputs.cache
 C:\Users\ferna\source\repos\ProyectoGraduación\ProyectoGraduación\obj\Debug\net8.0\ProyectoGraduación.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\ferna\source\repos\ProyectoGraduación\ProyectoGraduación\obj\Debug\net8.0\ProyectoGraduación.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\ferna\source\repos\ProyectoGraduación\ProyectoGraduación\obj\Debug\net8.0\ProyectoGraduación.sourcelink.json

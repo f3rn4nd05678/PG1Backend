@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ProyectoGraduación.Models;
 using ProyectoGraduación.IServices;
-
+    
 
 [ApiController]
 [Route("api/[controller]")]
