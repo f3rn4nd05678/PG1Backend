@@ -1,0 +1,7 @@
+C:\Users\ferna\source\repos\ProyectoGraduación\ProyectoGraduación\obj\Debug\net8.0\ProyectoGraduación.csproj.AssemblyReference.cache
+C:\Users\ferna\source\repos\ProyectoGraduación\ProyectoGraduación\obj\Debug\net8.0\ProyectoGraduación.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ferna\source\repos\ProyectoGraduación\ProyectoGraduación\obj\Debug\net8.0\ProyectoGraduación.AssemblyInfoInputs.cache
+C:\Users\ferna\source\repos\ProyectoGraduación\ProyectoGraduación\obj\Debug\net8.0\ProyectoGraduación.AssemblyInfo.cs
+C:\Users\ferna\source\repos\ProyectoGraduación\ProyectoGraduación\obj\Debug\net8.0\ProyectoGraduación.csproj.CoreCompileInputs.cache
+C:\Users\ferna\source\repos\ProyectoGraduación\ProyectoGraduación\obj\Debug\net8.0\ProyectoGraduación.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\ferna\source\repos\ProyectoGraduación\ProyectoGraduación\obj\Debug\net8.0\ProyectoGraduación.MvcApplicationPartsAssemblyInfo.cache
