@@ -89,6 +89,7 @@ builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IRolRepository, RolRepository>();
 builder.Services.AddScoped<IPermisoRepository, PermisoRepository>();
 builder.Services.AddScoped<IMenuRepository, MenuRepository>();
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 
 // Registrar servicios
 builder.Services.AddScoped<IProductoService, ProductoService>();
@@ -96,6 +97,7 @@ builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IRolService, RolService>();
 builder.Services.AddScoped<IPermisoService, PermisoService>();
 builder.Services.AddScoped<IMenuService, MenuService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
 
 var app = builder.Build();
 
