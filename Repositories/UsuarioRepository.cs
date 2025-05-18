@@ -47,4 +47,12 @@ public class UsuarioRepository : IUsuarioRepository
 
     public async Task<bool> ExisteCorreo(string correo) =>
         await _context.Usuarios.AnyAsync(u => u.Correo == correo);
+
+    public async Task<IEnumerable<Usuario>> GetByRol(int rolId)
+    {
+        return await _context.Usuarios
+            .Where(u => u.RolId == rolId)
+            .Include(u => u.Rol)
+            .ToListAsync();
+    }
 }

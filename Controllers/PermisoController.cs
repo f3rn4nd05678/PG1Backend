@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ProyectoGraduación.Models;
 using ProyectoGraduación.IServices;
+using ProyectoGraduación.DTOs;
 
 namespace ProyectoGraduación.Controllers;
 

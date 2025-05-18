@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using ProyectoGraduación.Data;
 using ProyectoGraduación.IRepositories;
-using ProyectoGraduación.IServices;
 using ProyectoGraduación.Repositories;
-using ProyectoGraduación.Services.IServices;
+using ProyectoGraduación.IServices;
 using ProyectoGraduación.Services;
+using Microsoft.AspNetCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
@@ -18,6 +21,21 @@ builder.Configuration
 
 // Agregar servicios al contenedor
 builder.Services.AddControllers();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                builder.Configuration["Jwt:Key"] ?? "PlastiHogarSA$2025"))
+        };
+    });
 
 // Configurar Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -61,22 +79,6 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configurar JWT
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                builder.Configuration["Jwt:Key"] ?? "ClaveSecretaPorDefectoMuySegura12345"))
-        };
-    });
 
 // Registrar repositorios
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
@@ -94,7 +96,8 @@ builder.Services.AddScoped<IMenuService, MenuService>();
 
 var app = builder.Build();
 
-// Configure el pipeline de solicitudes HTTP
+
+
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
@@ -103,10 +106,60 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 
 app.UseHttpsRedirection();
 
-// Añadir autenticación y autorización
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseExceptionHandler(appBuilder =>
+{
+    appBuilder.Run(async context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+
+        var error = context.Features.Get<IExceptionHandlerFeature>();
+        if (error != null)
+        {
+            var response = new
+            {
+                statusCode = context.Response.StatusCode,
+                isSuccess = false,
+                message = "Error interno del servidor",
+                data = (object)null
+            };
+
+            await context.Response.WriteAsJsonAsync(response);
+        }
+    });
+});
+
+app.UseStatusCodePages(async context =>
+{
+    var response = new
+    {
+        statusCode = context.HttpContext.Response.StatusCode,
+        isSuccess = false,
+        message = GetStatusCodeMessage(context.HttpContext.Response.StatusCode),
+        data = (object)null
+    };
+
+    context.HttpContext.Response.ContentType = "application/json";
+    await context.HttpContext.Response.WriteAsJsonAsync(response);
+});
+
+string GetStatusCodeMessage(int statusCode)
+{
+    return statusCode switch
+    {
+        400 => "Solicitud incorrecta",
+        401 => "No autorizado",
+        403 => "Prohibido",
+        404 => "Recurso no encontrado",
+        405 => "Método no permitido",
+        500 => "Error interno del servidor",
+        _ => "Error desconocido"
+    };
+}
 
 app.Run();

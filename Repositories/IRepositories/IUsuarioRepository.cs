@@ -10,4 +10,5 @@ public interface IUsuarioRepository
     Task Update(Usuario usuario);
     Task Delete(int id);
     Task<bool> ExisteCorreo(string correo);
+    Task<IEnumerable<Usuario>> GetByRol(int rolId);
 }

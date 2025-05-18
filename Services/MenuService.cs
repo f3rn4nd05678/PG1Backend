@@ -2,7 +2,7 @@
 using ProyectoGraduación.DTOs;
 using ProyectoGraduación.IRepositories;
 using ProyectoGraduación.IServices;
-using ProyectoGraduación.Services.IServices;
+using ProyectoGraduación.Services;
 
 namespace ProyectoGraduación.Services;
 public class MenuService : IMenuService

@@ -61,8 +61,21 @@ public class UsuarioService : IUsuarioService
     {
         var usuario = await _repository.GetByCorreo(loginDto.Correo);
 
-        if (usuario == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, usuario.Password))
-            throw new Exception("Credenciales inválidas");
+        if (usuario == null)
+            throw new Exception("Usuario no encontrado");
+
+        try
+        {
+            bool passwordCoincide = BCrypt.Net.BCrypt.Verify(loginDto.Password, usuario.Password);
+            if (!passwordCoincide)
+                throw new Exception("Contraseña incorrecta");
+        }
+        catch (Exception ex)
+        {
+            // Log detallado del error para diagnóstico
+            Console.WriteLine($"Error verificando contraseña: {ex.Message}");
+            throw new Exception($"Error en la verificación: {ex.Message}");
+        }
 
         return GenerarToken(usuario);
     }
@@ -106,11 +119,11 @@ public class UsuarioService : IUsuarioService
     {
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
-            new Claim(ClaimTypes.Name, usuario.Nombre),
-            new Claim(ClaimTypes.Email, usuario.Correo),
-            new Claim(ClaimTypes.Role, usuario.Rol?.Nombre ?? "Sin Rol")
-        };
+        new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+        new Claim(ClaimTypes.Name, usuario.Nombre),
+        new Claim(ClaimTypes.Email, usuario.Correo),
+        new Claim(ClaimTypes.Role, usuario.Rol?.Nombre ?? "Sin Rol")
+    };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
             _configuration["Jwt:Key"] ?? "ClaveSecretaPorDefectoMuySegura12345"));
@@ -137,4 +150,12 @@ public class UsuarioService : IUsuarioService
             RolNombre = usuario.Rol?.Nombre
         };
     }
+
+    public async Task<IEnumerable<UsuarioDto>> BuscarPorRol(int rolId)
+    {
+        // Implementar en el repositorio primero
+        var usuarios = await _repository.GetByRol(rolId);
+        return usuarios.Select(MapToDto);
+    }
+
 }

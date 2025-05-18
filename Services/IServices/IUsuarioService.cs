@@ -12,4 +12,7 @@ public interface IUsuarioService
     Task Update(int id, RegistroUsuarioDto usuarioDto);
     Task Delete(int id);
     Task<bool> ExisteCorreo(string correo);
+    Task<IEnumerable<UsuarioDto>> BuscarPorRol(int rolId);
+
+
 }

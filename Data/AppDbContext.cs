@@ -40,22 +40,37 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Menu>().ToTable("menu");
         modelBuilder.Entity<Producto>().ToTable("producto");
 
-        // Mapeo de propiedades para la base de datos existente
-        modelBuilder.Entity<Rol>()
-            .Property(r => r.Id)
-            .HasColumnName("id_rol");
-
+        // ¡Aquí está la solución! - Mapeo de propiedades para Usuario
         modelBuilder.Entity<Usuario>()
             .Property(u => u.Id)
             .HasColumnName("id_usuario");
 
         modelBuilder.Entity<Usuario>()
+            .Property(u => u.Nombre)
+            .HasColumnName("nombre");
+
+        modelBuilder.Entity<Usuario>()
+            .Property(u => u.Correo)
+            .HasColumnName("correo");
+
+        modelBuilder.Entity<Usuario>()
+            .Property(u => u.Password)
+            .HasColumnName("password");
+
+        modelBuilder.Entity<Usuario>()
             .Property(u => u.RolId)
             .HasColumnName("id_rol");
 
-        modelBuilder.Entity<Producto>()
-            .Property(p => p.Id)
-            .HasColumnName("id_producto");
+        // Mapeo para otras entidades si es necesario
+        modelBuilder.Entity<Rol>()
+            .Property(r => r.Id)
+            .HasColumnName("id_rol");
+
+        modelBuilder.Entity<Rol>()
+            .Property(r => r.Nombre)
+            .HasColumnName("nombre");
+
+        // Añade más mapeos según sea necesario
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
