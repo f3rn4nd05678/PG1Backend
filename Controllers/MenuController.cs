@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿// Controllers/MenuController.cs
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ProyectoGraduación.Models;
 using ProyectoGraduación.IServices;
-
+using ProyectoGraduación.IRepositories;
+using ProyectoGraduación.Extensions;
+using System.Security.Claims;
 
 namespace ProyectoGraduación.Controllers;
 
@@ -11,55 +13,53 @@ namespace ProyectoGraduación.Controllers;
 [Authorize]
 public class MenuController : ControllerBase
 {
-    private readonly IMenuService _service;
+    private readonly IMenuService _menuService;
+    private readonly IUsuarioRepository _usuarioRepository;
 
-    public MenuController(IMenuService service)
+    public MenuController(IMenuService menuService, IUsuarioRepository usuarioRepository)
     {
-        _service = service;
+        _menuService = menuService;
+        _usuarioRepository = usuarioRepository;
     }
 
-    [HttpGet]
-    [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> GetAll() => Ok(await _service.GetAll());
-
-    [HttpGet("por-rol/{rolId}")]
-    public async Task<IActionResult> GetMenusByRolId(int rolId)
+    [HttpGet("Obtener-menu")]
+    public async Task<IActionResult> ObtenerMenu()
     {
-        return Ok(await _service.GetMenusByRolId(rolId));
+        try
+        {
+            // Obtener el ID del usuario del token
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return this.ApiError("Token inválido");
+
+            // Obtener el usuario con su rol
+            var usuario = await _usuarioRepository.GetById(int.Parse(userId));
+            if (usuario == null)
+                return this.ApiNotFound("Usuario no encontrado");
+
+            // Obtener menús para el rol del usuario
+            var menus = await _menuService.GetMenusByRolId(usuario.RolId);
+
+            return this.ApiOk(menus, "Menús obtenidos correctamente");
+        }
+        catch (Exception ex)
+        {
+            return this.ApiError(ex.Message);
+        }
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("Obtener-todos-menus")]
     [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> ObtenerTodosLosMenus()
     {
-        var menu = await _service.GetById(id);
-        if (menu == null)
-            return NotFound();
-        return Ok(menu);
-    }
-
-    [HttpPost]
-    [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> Post([FromBody] Menu menu)
-    {
-        await _service.Add(menu);
-        return CreatedAtAction(nameof(GetById), new { id = menu.Id }, menu);
-    }
-
-    [HttpPut("{id}")]
-    [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> Put(int id, [FromBody] Menu menu)
-    {
-        menu.Id = id;
-        await _service.Update(menu);
-        return NoContent();
-    }
-
-    [HttpDelete("{id}")]
-    [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        await _service.Delete(id);
-        return NoContent();
+        try
+        {
+            var menus = await _menuService.GetAll();
+            return this.ApiOk(menus, "Todos los menús obtenidos correctamente");
+        }
+        catch (Exception ex)
+        {
+            return this.ApiError(ex.Message);
+        }
     }
 }

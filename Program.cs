@@ -77,8 +77,11 @@ builder.Services.AddSwaggerGen(c =>
 
 // Configurar DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.LogTo(Console.WriteLine, LogLevel.Information); // Ver el SQL generado
+    options.EnableSensitiveDataLogging(); // Ver los parámetros
+});
 
 // Registrar repositorios
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();

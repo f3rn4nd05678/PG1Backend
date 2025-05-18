@@ -48,17 +48,17 @@ public class MenuService : IMenuService
         {
             Id = menu.Id,
             Titulo = menu.Titulo,
-            Ruta = menu.Ruta,
-            Icono = menu.Icono,
+            Ruta = menu.Ruta ?? "#", 
+            Icono = menu.Icono ?? "default",
             MenuPadreId = menu.MenuPadreId,
             Orden = menu.Orden,
             Activo = menu.Activo
         };
 
-        // Buscar todos los hijos de este menú
+
         var children = allMenus.Where(m => m.MenuPadreId == menu.Id).OrderBy(m => m.Orden).ToList();
 
-        // Recursivamente agregar los hijos
+
         if (children.Any())
         {
             menuDto.Items = children.Select(child => MapToDto(child, allMenus)).ToList();

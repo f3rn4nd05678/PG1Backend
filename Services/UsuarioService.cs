@@ -52,7 +52,6 @@ public class UsuarioService : IUsuarioService
 
         await _repository.Add(usuario);
 
-        // Recuperamos el usuario para obtener su ID y datos de rol
         var usuarioCreado = await _repository.GetByCorreo(usuario.Correo);
         return MapToDto(usuarioCreado);
     }
@@ -87,7 +86,6 @@ public class UsuarioService : IUsuarioService
         if (usuario == null)
             throw new Exception("Usuario no encontrado");
 
-        // Verificar si el correo ya existe y no es del usuario actual
         if (usuario.Correo != usuarioDto.Correo && await _repository.ExisteCorreo(usuarioDto.Correo))
             throw new Exception("El correo ya está registrado por otro usuario");
 

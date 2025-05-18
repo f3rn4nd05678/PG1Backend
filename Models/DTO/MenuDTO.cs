@@ -4,8 +4,8 @@ public class MenuDto
 {
     public int Id { get; set; }
     public string Titulo { get; set; }
-    public string Ruta { get; set; }
-    public string Icono { get; set; }
+    public string? Ruta { get; set; }
+    public string? Icono { get; set; }
     public int? MenuPadreId { get; set; }
     public int Orden { get; set; }
     public bool Activo { get; set; }

@@ -40,7 +40,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Menu>().ToTable("menu");
         modelBuilder.Entity<Producto>().ToTable("producto");
 
-        // ¡Aquí está la solución! - Mapeo de propiedades para Usuario
+        // Mapeos para Usuario
         modelBuilder.Entity<Usuario>()
             .Property(u => u.Id)
             .HasColumnName("id_usuario");
@@ -61,7 +61,7 @@ public class AppDbContext : DbContext
             .Property(u => u.RolId)
             .HasColumnName("id_rol");
 
-        // Mapeo para otras entidades si es necesario
+        // Mapeos para Rol
         modelBuilder.Entity<Rol>()
             .Property(r => r.Id)
             .HasColumnName("id_rol");
@@ -70,7 +70,75 @@ public class AppDbContext : DbContext
             .Property(r => r.Nombre)
             .HasColumnName("nombre");
 
-        // Añade más mapeos según sea necesario
+        // Mapeos para Permiso
+        modelBuilder.Entity<Permiso>()
+            .Property(p => p.Id)
+            .HasColumnName("id_permiso");
+
+        modelBuilder.Entity<Permiso>()
+            .Property(p => p.Nombre)
+            .HasColumnName("nombre");
+
+        modelBuilder.Entity<Permiso>()
+            .Property(p => p.Descripcion)
+            .HasColumnName("descripcion");
+
+        // Mapeos para RolPermiso
+        modelBuilder.Entity<RolPermiso>()
+            .Property(rp => rp.RolId)
+            .HasColumnName("id_rol");
+
+        modelBuilder.Entity<RolPermiso>()
+            .Property(rp => rp.PermisoId)
+            .HasColumnName("id_permiso");
+
+        // Mapeos para Menu
+        modelBuilder.Entity<Menu>()
+            .Property(m => m.Id)
+            .HasColumnName("id_menu");
+
+        modelBuilder.Entity<Menu>()
+            .Property(m => m.Titulo)
+            .HasColumnName("titulo");
+
+        modelBuilder.Entity<Menu>()
+            .Property(m => m.Ruta)
+            .HasColumnName("ruta")
+            .IsRequired(false);
+
+        modelBuilder.Entity<Menu>()
+            .Property(m => m.Icono)
+            .HasColumnName("icono")
+            .IsRequired(false);
+
+        modelBuilder.Entity<Menu>()
+            .Property(m => m.MenuPadreId)
+            .HasColumnName("id_menu_padre");
+
+        modelBuilder.Entity<Menu>()
+            .Property(m => m.Orden)
+            .HasColumnName("orden");
+
+        modelBuilder.Entity<Menu>()
+            .Property(m => m.Activo)
+            .HasColumnName("activo");
+
+        modelBuilder.Entity<Menu>()
+            .Property(m => m.PermisoId)
+            .HasColumnName("id_permiso");
+
+        // Mapeos para Producto  
+        modelBuilder.Entity<Producto>()
+            .Property(p => p.Id)
+            .HasColumnName("id_producto");
+
+        modelBuilder.Entity<Producto>()
+            .Property(p => p.Nombre)
+            .HasColumnName("nombre");
+
+        modelBuilder.Entity<Producto>()
+            .Property(p => p.Precio)
+            .HasColumnName("precio");
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
