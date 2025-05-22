@@ -46,7 +46,8 @@ public class Cliente
     public int? CreadoPor { get; set; }
     public int? ActualizadoPor { get; set; }
 
-    // Navegación
-    public Usuario? UsuarioCreador { get; set; }
-    public Usuario? UsuarioActualizador { get; set; }
+    // El error indica que las propiedades de navegación no coinciden con las columnas de la BD
+    // Comentamos estas propiedades para evitar el error 
+    // public Usuario? UsuarioCreador { get; set; }
+    // public Usuario? UsuarioActualizador { get; set; }
 }

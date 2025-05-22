@@ -190,11 +190,40 @@ public class ClienteService : IClienteService
             Moneda = cliente.Moneda,
             Nit = cliente.Nit,
             Direccion = cliente.Direccion,
+
+            // Información de contacto
             Telefono1 = cliente.Telefono1,
+            Telefono2 = cliente.Telefono2,
+            TelefonoMovil = cliente.TelefonoMovil,
+            Fax = cliente.Fax,
             CorreoElectronico = cliente.CorreoElectronico,
+            SitioWeb = cliente.SitioWeb,
+
+            // Información personal
+            Posicion = cliente.Posicion,
+            Titulo = cliente.Titulo,
+            SegundoNombre = cliente.SegundoNombre,
+            Apellido = cliente.Apellido,
+
+            // Campos financieros
             SaldoCuenta = cliente.SaldoCuenta,
+            LimiteCredito = cliente.LimiteCredito,
+            DiasCredito = cliente.DiasCredito,
+            DescuentoPorcentaje = cliente.DescuentoPorcentaje,
+
+            // Configuraciones
             Activo = cliente.Activo,
-            FechaCreacion = cliente.FechaCreacion
+            BloquearMarketing = cliente.BloquearMarketing,
+            Observaciones1 = cliente.Observaciones1,
+            Observaciones2 = cliente.Observaciones2,
+            ClaveAcceso = cliente.ClaveAcceso,
+            CiudadNacimiento = cliente.CiudadNacimiento,
+
+            // Auditoría
+            FechaCreacion = cliente.FechaCreacion,
+            FechaActualizacion = cliente.FechaActualizacion,
+            CreadoPor = cliente.CreadoPor,
+            ActualizadoPor = cliente.ActualizadoPor
         };
     }
 
@@ -203,6 +232,4 @@ public class ClienteService : IClienteService
         var cliente = await _repository.GetByCodigoOrNit(codigoOrNit);
         return cliente != null ? MapToDto(cliente) : null;
     }
-
-
 }

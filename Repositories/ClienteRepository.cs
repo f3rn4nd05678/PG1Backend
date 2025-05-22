@@ -70,9 +70,8 @@ public class ClienteRepository : IClienteRepository
 
     public async Task<Cliente?> GetById(int id)
     {
+        // Eliminamos los Include ya que parecen estar causando problemas
         return await _context.Clientes
-            .Include(c => c.UsuarioCreador)
-            .Include(c => c.UsuarioActualizador)
             .FirstOrDefaultAsync(c => c.Id == id);
     }
 

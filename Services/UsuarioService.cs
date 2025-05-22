@@ -124,14 +124,14 @@ public class UsuarioService : IUsuarioService
     };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-            _configuration["Jwt:Key"] ?? "ClaveSecretaPorDefectoMuySegura12345"));
+            _configuration["Jwt:Key"] ?? "Plastihogar2025$"));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],
             audience: _configuration["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.Now.AddHours(8),
+            expires: DateTime.Now.AddHours(1),
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

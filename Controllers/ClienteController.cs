@@ -19,6 +19,29 @@ public class ClienteController : ControllerBase
         _clienteService = clienteService;
     }
 
+    [HttpGet("listar")]
+    [Authorize(Roles = "Administrador,Vendedor,Punto de venta")]
+    public async Task<IActionResult> GetAllClientes()
+    {
+        try
+        {
+            var clientes = await _clienteService.GetAll();
+
+            var response = new
+            {
+                Clientes = clientes,
+                Total = clientes.Count(),
+                Mensaje = "Clientes obtenidos correctamente"
+            };
+
+            return this.ApiOk(response, "Clientes obtenidos correctamente");
+        }
+        catch (Exception ex)
+        {
+            return this.ApiError(ex.Message);
+        }
+    }
+
     [HttpPost("listar")]
     [Authorize(Roles = "Administrador,Vendedor,Punto de venta")]
     public async Task<IActionResult> GetAll([FromBody] FiltroClienteDto? filtro = null)
