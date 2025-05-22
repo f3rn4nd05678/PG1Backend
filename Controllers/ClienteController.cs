@@ -13,10 +13,12 @@ namespace ProyectoGraduación.Controllers;
 public class ClienteController : ControllerBase
 {
     private readonly IClienteService _clienteService;
+    private readonly ILogger<ClienteController> _logger;
 
-    public ClienteController(IClienteService clienteService)
+    public ClienteController(IClienteService clienteService, ILogger<ClienteController> logger)
     {
         _clienteService = clienteService;
+        _logger = logger;
     }
 
     [HttpGet("listar")]
@@ -38,6 +40,7 @@ public class ClienteController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al obtener todos los clientes");
             return this.ApiError(ex.Message);
         }
     }
@@ -68,6 +71,7 @@ public class ClienteController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al obtener clientes con filtros");
             return this.ApiError(ex.Message);
         }
     }
@@ -86,6 +90,7 @@ public class ClienteController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al obtener cliente por ID: {Id}", request.Id);
             return this.ApiError(ex.Message);
         }
     }
@@ -113,6 +118,7 @@ public class ClienteController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al buscar clientes con término: {Termino}", request.TerminoBusqueda);
             return this.ApiError(ex.Message);
         }
     }
@@ -123,13 +129,25 @@ public class ClienteController : ControllerBase
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            // Validar datos requeridos
+            if (string.IsNullOrWhiteSpace(crearClienteDto.Nombre))
+            {
+                return this.ApiError("El nombre del cliente es obligatorio");
+            }
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return this.ApiError("Usuario no válido");
+            }
+
             var cliente = await _clienteService.CreateCliente(crearClienteDto, userId);
 
             return this.ApiCreated(cliente, "Cliente creado exitosamente");
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al crear cliente");
             return this.ApiError(ex.Message);
         }
     }
@@ -140,14 +158,38 @@ public class ClienteController : ControllerBase
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            // Validar el request
+            if (request == null || request.Cliente == null)
+            {
+                return this.ApiError("Datos de actualización inválidos");
+            }
+
+            if (request.Id <= 0)
+            {
+                return this.ApiError("ID de cliente inválido");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Cliente.Nombre))
+            {
+                return this.ApiError("El nombre del cliente es obligatorio");
+            }
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return this.ApiError("Usuario no válido");
+            }
+
+            _logger.LogInformation("Iniciando actualización de cliente ID: {Id} por usuario: {UserId}", request.Id, userId);
+
             var cliente = await _clienteService.UpdateCliente(request.Id, request.Cliente, userId);
 
             return this.ApiOk(cliente, "Cliente actualizado exitosamente");
         }
         catch (Exception ex)
         {
-            return this.ApiError(ex.Message);
+            _logger.LogError(ex, "Error al actualizar cliente ID: {Id}. Error: {Message}", request?.Id, ex.Message);
+            return this.ApiError($"Error al actualizar el cliente: {ex.Message}");
         }
     }
 
@@ -157,13 +199,19 @@ public class ClienteController : ControllerBase
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return this.ApiError("Usuario no válido");
+            }
+
             await _clienteService.DeleteCliente(request.Id, userId);
 
             return this.ApiOk("Cliente eliminado exitosamente");
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al eliminar cliente ID: {Id}", request.Id);
             return this.ApiError(ex.Message);
         }
     }
@@ -186,6 +234,7 @@ public class ClienteController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al validar código: {Codigo}", request.Codigo);
             return this.ApiError(ex.Message);
         }
     }
@@ -208,6 +257,7 @@ public class ClienteController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al validar NIT: {Nit}", request.Nit);
             return this.ApiError(ex.Message);
         }
     }

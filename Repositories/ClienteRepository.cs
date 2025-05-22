@@ -3,23 +3,24 @@ using ProyectoGraduación.Models;
 using ProyectoGraduación.Data;
 using ProyectoGraduación.IRepositories;
 using ProyectoGraduación.DTOs;
+using Microsoft.Extensions.Logging;
 
 namespace ProyectoGraduación.Repositories;
 
 public class ClienteRepository : IClienteRepository
 {
     private readonly AppDbContext _context;
+    private readonly ILogger<ClienteRepository> _logger;
 
-
-    public ClienteRepository(AppDbContext context)
+    public ClienteRepository(AppDbContext context, ILogger<ClienteRepository> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<Cliente>> GetAll()
     {
         return await _context.Clientes
-            .Where(c => c.Activo)
             .OrderBy(c => c.Nombre)
             .ToListAsync();
     }
@@ -70,11 +71,17 @@ public class ClienteRepository : IClienteRepository
 
     public async Task<Cliente?> GetById(int id)
     {
-        // Eliminamos los Include ya que parecen estar causando problemas
-        return await _context.Clientes
-            .FirstOrDefaultAsync(c => c.Id == id);
+        try
+        {
+            return await _context.Clientes
+                .FirstOrDefaultAsync(c => c.Id == id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener cliente por ID: {Id}", id);
+            throw;
+        }
     }
-
 
     public async Task<IEnumerable<Cliente>> GetMultipleByCodigoNitOrNombre(string terminoBusqueda)
     {
@@ -90,7 +97,6 @@ public class ClienteRepository : IClienteRepository
             .ToListAsync();
     }
 
-
     public async Task<Cliente?> GetByNit(string nit)
     {
         return await _context.Clientes
@@ -105,28 +111,81 @@ public class ClienteRepository : IClienteRepository
 
     public async Task Add(Cliente cliente)
     {
-        cliente.FechaCreacion = DateTime.UtcNow;
-        cliente.FechaActualizacion = DateTime.UtcNow;
-        _context.Clientes.Add(cliente);
-        await _context.SaveChangesAsync();
+        try
+        {
+            cliente.FechaCreacion = DateTime.UtcNow;
+            cliente.FechaActualizacion = DateTime.UtcNow;
+
+            _context.Clientes.Add(cliente);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Cliente creado con ID: {Id}", cliente.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al crear cliente: {Message}", ex.Message);
+            throw;
+        }
     }
 
     public async Task Update(Cliente cliente)
     {
-        cliente.FechaActualizacion = DateTime.UtcNow;
-        _context.Clientes.Update(cliente);
-        await _context.SaveChangesAsync();
+        try
+        {
+            // Asegurar que la fecha de actualización se establezca
+            cliente.FechaActualizacion = DateTime.UtcNow;
+
+            // Usar Entry para actualizar solo la entidad específica
+            var entry = _context.Entry(cliente);
+
+            if (entry.State == EntityState.Detached)
+            {
+                _context.Clientes.Attach(cliente);
+                entry.State = EntityState.Modified;
+            }
+
+            _logger.LogInformation("Intentando actualizar cliente ID: {Id}", cliente.Id);
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Cliente actualizado exitosamente ID: {Id}", cliente.Id);
+        }
+        catch (DbUpdateException dbEx)
+        {
+            _logger.LogError(dbEx, "Error de base de datos al actualizar cliente ID: {Id}. Detalles: {InnerException}",
+                cliente.Id, dbEx.InnerException?.Message);
+            throw new Exception($"Error en la base de datos al actualizar el cliente: {dbEx.InnerException?.Message ?? dbEx.Message}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error general al actualizar cliente ID: {Id}", cliente.Id);
+            throw new Exception($"Error al actualizar el cliente: {ex.Message}");
+        }
     }
 
     public async Task Delete(int id)
     {
-        var cliente = await _context.Clientes.FindAsync(id);
-        if (cliente != null)
+        try
         {
-            // Soft delete - marcar como inactivo en lugar de eliminar
-            cliente.Activo = false;
-            cliente.FechaActualizacion = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            var cliente = await _context.Clientes.FindAsync(id);
+            if (cliente != null)
+            {
+                // Hard delete - eliminar completamente de la base de datos
+                _context.Clientes.Remove(cliente);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Cliente eliminado completamente ID: {Id}", id);
+            }
+            else
+            {
+                _logger.LogWarning("Intento de eliminar cliente que no existe ID: {Id}", id);
+                throw new Exception("Cliente no encontrado");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al eliminar cliente ID: {Id}", id);
+            throw;
         }
     }
 
@@ -142,26 +201,34 @@ public class ClienteRepository : IClienteRepository
 
     public async Task<string> GenerateNextCodigo()
     {
-        // Generar código automático basado en el siguiente número disponible
-        var ultimoCodigo = await _context.Clientes
-            .Where(c => c.Codigo.StartsWith("C"))
-            .OrderByDescending(c => c.Id)
-            .Select(c => c.Codigo)
-            .FirstOrDefaultAsync();
-
-        if (ultimoCodigo == null)
+        try
         {
+            // Generar código automático basado en el siguiente número disponible
+            var ultimoCodigo = await _context.Clientes
+                .Where(c => c.Codigo.StartsWith("C"))
+                .OrderByDescending(c => c.Id)
+                .Select(c => c.Codigo)
+                .FirstOrDefaultAsync();
+
+            if (ultimoCodigo == null)
+            {
+                return "C-000001";
+            }
+
+            // Extraer el número del código y incrementar
+            var numeroStr = ultimoCodigo.Substring(2); // Quitar "C-"
+            if (int.TryParse(numeroStr, out int numero))
+            {
+                return $"C-{(numero + 1):D6}";
+            }
+
             return "C-000001";
         }
-
-        // Extraer el número del código y incrementar
-        var numeroStr = ultimoCodigo.Substring(2); // Quitar "C-"
-        if (int.TryParse(numeroStr, out int numero))
+        catch (Exception ex)
         {
-            return $"C-{(numero + 1):D6}";
+            _logger.LogError(ex, "Error al generar siguiente código");
+            throw;
         }
-
-        return "C-000001";
     }
 
     public async Task<Cliente?> GetByCodigoOrNit(string codigoOrNit)
