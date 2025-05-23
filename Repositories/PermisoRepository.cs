@@ -53,7 +53,7 @@ public class PermisoRepository : IPermisoRepository
 
     public async Task AsignarPermisoARol(int rolId, int permisoId)
     {
-        // Verificar si ya existe la relación
+      
         bool existe = await _context.RolesPermisos
             .AnyAsync(rp => rp.RolId == rolId && rp.PermisoId == permisoId);
 

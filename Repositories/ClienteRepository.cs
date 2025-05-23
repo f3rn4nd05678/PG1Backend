@@ -29,7 +29,7 @@ public class ClienteRepository : IClienteRepository
     {
         var query = _context.Clientes.AsQueryable();
 
-        // Aplicar filtros
+
         if (!string.IsNullOrEmpty(filtro.Nombre))
         {
             query = query.Where(c => c.Nombre.ToLower().Contains(filtro.Nombre.ToLower()) ||
@@ -56,10 +56,9 @@ public class ClienteRepository : IClienteRepository
             query = query.Where(c => c.Activo == filtro.Activo.Value);
         }
 
-        // Contar total antes de aplicar paginación
+
         var total = await query.CountAsync();
 
-        // Aplicar paginación
         var clientes = await query
             .OrderBy(c => c.Nombre)
             .Skip((filtro.Pagina - 1) * filtro.ElementosPorPagina)
@@ -93,7 +92,7 @@ public class ClienteRepository : IClienteRepository
                 (c.NombreExtranjero != null && c.NombreExtranjero.ToLower().Contains(terminoBusqueda.ToLower()))
             ))
             .OrderBy(c => c.Nombre)
-            .Take(10) // Limitar a 10 resultados
+            .Take(10) 
             .ToListAsync();
     }
 
@@ -132,10 +131,10 @@ public class ClienteRepository : IClienteRepository
     {
         try
         {
-            // Asegurar que la fecha de actualización se establezca
+            
             cliente.FechaActualizacion = DateTime.UtcNow;
 
-            // Usar Entry para actualizar solo la entidad específica
+           
             var entry = _context.Entry(cliente);
 
             if (entry.State == EntityState.Detached)
@@ -170,7 +169,7 @@ public class ClienteRepository : IClienteRepository
             var cliente = await _context.Clientes.FindAsync(id);
             if (cliente != null)
             {
-                // Hard delete - eliminar completamente de la base de datos
+               
                 _context.Clientes.Remove(cliente);
                 await _context.SaveChangesAsync();
 
@@ -203,7 +202,6 @@ public class ClienteRepository : IClienteRepository
     {
         try
         {
-            // Generar código automático basado en el siguiente número disponible
             var ultimoCodigo = await _context.Clientes
                 .Where(c => c.Codigo.StartsWith("C"))
                 .OrderByDescending(c => c.Id)
@@ -215,8 +213,8 @@ public class ClienteRepository : IClienteRepository
                 return "C-000001";
             }
 
-            // Extraer el número del código y incrementar
-            var numeroStr = ultimoCodigo.Substring(2); // Quitar "C-"
+           
+            var numeroStr = ultimoCodigo.Substring(2); 
             if (int.TryParse(numeroStr, out int numero))
             {
                 return $"C-{(numero + 1):D6}";

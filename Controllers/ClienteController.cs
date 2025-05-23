@@ -129,7 +129,6 @@ public class ClienteController : ControllerBase
     {
         try
         {
-            // Validar datos requeridos
             if (string.IsNullOrWhiteSpace(crearClienteDto.Nombre))
             {
                 return this.ApiError("El nombre del cliente es obligatorio");
@@ -158,7 +157,7 @@ public class ClienteController : ControllerBase
     {
         try
         {
-            // Validar el request
+
             if (request == null || request.Cliente == null)
             {
                 return this.ApiError("Datos de actualización inválidos");

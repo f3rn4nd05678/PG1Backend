@@ -6,7 +6,6 @@ public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    // Constructor para migraciones
     public AppDbContext() { }
 
     public DbSet<Producto> Productos { get; set; }
@@ -19,7 +18,7 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Configurar relaciones y tablas
+
         modelBuilder.Entity<RolPermiso>()
             .HasKey(rp => new { rp.RolId, rp.PermisoId });
 
@@ -33,7 +32,7 @@ public class AppDbContext : DbContext
             .WithMany(p => p.RolesPermisos)
             .HasForeignKey(rp => rp.PermisoId);
 
-        // Configurando tablas con nombres en español
+  
         modelBuilder.Entity<Rol>().ToTable("rol");
         modelBuilder.Entity<Usuario>().ToTable("usuario");
         modelBuilder.Entity<Permiso>().ToTable("permiso");
@@ -41,7 +40,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Menu>().ToTable("menu");
         modelBuilder.Entity<Producto>().ToTable("producto");
 
-        // Mapeos para Usuario
+
         modelBuilder.Entity<Usuario>()
             .Property(u => u.Id)
             .HasColumnName("id_usuario");
@@ -62,7 +61,7 @@ public class AppDbContext : DbContext
             .Property(u => u.RolId)
             .HasColumnName("id_rol");
 
-        // Mapeos para Rol
+
         modelBuilder.Entity<Rol>()
             .Property(r => r.Id)
             .HasColumnName("id_rol");
@@ -71,7 +70,7 @@ public class AppDbContext : DbContext
             .Property(r => r.Nombre)
             .HasColumnName("nombre");
 
-        // Mapeos para Permiso
+
         modelBuilder.Entity<Permiso>()
             .Property(p => p.Id)
             .HasColumnName("id_permiso");
@@ -84,7 +83,6 @@ public class AppDbContext : DbContext
             .Property(p => p.Descripcion)
             .HasColumnName("descripcion");
 
-        // Mapeos para RolPermiso
         modelBuilder.Entity<RolPermiso>()
             .Property(rp => rp.RolId)
             .HasColumnName("id_rol");
@@ -93,7 +91,7 @@ public class AppDbContext : DbContext
             .Property(rp => rp.PermisoId)
             .HasColumnName("id_permiso");
 
-        // Mapeos para Menu
+
         modelBuilder.Entity<Menu>()
             .Property(m => m.Id)
             .HasColumnName("id_menu");
@@ -128,7 +126,7 @@ public class AppDbContext : DbContext
             .Property(m => m.PermisoId)
             .HasColumnName("id_permiso");
 
-        // Mapeos para Producto  
+ 
         modelBuilder.Entity<Producto>()
             .Property(p => p.Id)
             .HasColumnName("id_producto");
@@ -141,10 +139,9 @@ public class AppDbContext : DbContext
             .Property(p => p.Precio)
             .HasColumnName("precio");
 
-        // Configurar tabla Cliente
         modelBuilder.Entity<Cliente>().ToTable("cliente");
 
-        // Mapeos para Cliente
+
         modelBuilder.Entity<Cliente>()
             .Property(c => c.Id)
             .HasColumnName("id_cliente");
@@ -282,7 +279,7 @@ public class AppDbContext : DbContext
     {
         if (!optionsBuilder.IsConfigured)
         {
-            // Conexión por defecto para migraciones
+           
             optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=sistema_inventario;Username=postgres;Password=1234");
         }
     }

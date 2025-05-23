@@ -33,10 +33,9 @@ public class MenuService : IMenuService
 
     private IEnumerable<MenuDto> BuildMenuTree(List<Menu> allMenus)
     {
-        // Primero obtenemos los menús padres (sin MenuPadreId)
         var rootMenus = allMenus.Where(m => m.MenuPadreId == null).ToList();
 
-        // Transformamos los menús padres en DTOs y añadimos sus hijos recursivamente
+        
         var menuDtos = rootMenus.Select(m => MapToDto(m, allMenus)).ToList();
 
         return menuDtos;

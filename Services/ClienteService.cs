@@ -46,13 +46,13 @@ public class ClienteService : IClienteService
     {
         try
         {
-            // Validaciones
+           
             if (!string.IsNullOrEmpty(crearClienteDto.Nit) && await _repository.ExisteNit(crearClienteDto.Nit))
             {
                 throw new Exception("Ya existe un cliente con ese NIT");
             }
 
-            // Generar código si no se proporcionó
+            
             var codigo = string.IsNullOrEmpty(crearClienteDto.Codigo)
                 ? await _repository.GenerateNextCodigo()
                 : crearClienteDto.Codigo;
@@ -97,7 +97,6 @@ public class ClienteService : IClienteService
 
             await _repository.Add(cliente);
 
-            // Obtener el cliente creado con información completa
             var clienteCreado = await _repository.GetById(cliente.Id);
             return MapToDto(clienteCreado!);
         }
@@ -120,7 +119,6 @@ public class ClienteService : IClienteService
 
             _logger.LogInformation("Actualizando cliente ID: {Id}, Usuario: {UserId}", id, usuarioId);
 
-            // Validar NIT si cambió y no está vacío
             if (!string.IsNullOrEmpty(actualizarClienteDto.Nit) &&
                 actualizarClienteDto.Nit != clienteExistente.Nit)
             {
@@ -131,7 +129,7 @@ public class ClienteService : IClienteService
                 }
             }
 
-            // Validar código si cambió y no está vacío
+            
             if (!string.IsNullOrEmpty(actualizarClienteDto.Codigo) &&
                 actualizarClienteDto.Codigo != clienteExistente.Codigo)
             {
@@ -142,7 +140,7 @@ public class ClienteService : IClienteService
                 }
             }
 
-            // Actualizar propiedades - usar valores existentes si los nuevos están vacíos
+           
             clienteExistente.Codigo = !string.IsNullOrEmpty(actualizarClienteDto.Codigo)
                 ? actualizarClienteDto.Codigo
                 : clienteExistente.Codigo;
@@ -174,7 +172,7 @@ public class ClienteService : IClienteService
             clienteExistente.CiudadNacimiento = actualizarClienteDto.CiudadNacimiento;
             clienteExistente.Activo = actualizarClienteDto.Activo;
             clienteExistente.ActualizadoPor = usuarioId;
-            // La fecha de actualización se maneja en el repositorio
+            
 
             await _repository.Update(clienteExistente);
 
@@ -185,13 +183,13 @@ public class ClienteService : IClienteService
         {
             _logger.LogError(ex, "Error al actualizar cliente ID: {Id}. Error: {Message}", id, ex.Message);
 
-            // Si es un error de validación conocido, relanzar tal como está
+           
             if (ex.Message.Contains("Ya existe"))
             {
                 throw;
             }
 
-            // Para otros errores, proporcionar más contexto
+            
             throw new Exception($"Error al actualizar el cliente: {ex.Message}", ex);
         }
     }
@@ -206,7 +204,7 @@ public class ClienteService : IClienteService
                 throw new Exception("Cliente no encontrado");
             }
 
-            // Eliminar completamente (hard delete)
+           
             await _repository.Delete(id);
 
             _logger.LogInformation("Cliente eliminado por usuario {UserId}: Cliente ID {Id}", usuarioId, id);
@@ -242,7 +240,7 @@ public class ClienteService : IClienteService
             Nit = cliente.Nit,
             Direccion = cliente.Direccion,
 
-            // Información de contacto
+            
             Telefono1 = cliente.Telefono1,
             Telefono2 = cliente.Telefono2,
             TelefonoMovil = cliente.TelefonoMovil,
@@ -250,19 +248,18 @@ public class ClienteService : IClienteService
             CorreoElectronico = cliente.CorreoElectronico,
             SitioWeb = cliente.SitioWeb,
 
-            // Información personal
             Posicion = cliente.Posicion,
             Titulo = cliente.Titulo,
             SegundoNombre = cliente.SegundoNombre,
             Apellido = cliente.Apellido,
 
-            // Campos financieros
+         
             SaldoCuenta = cliente.SaldoCuenta,
             LimiteCredito = cliente.LimiteCredito,
             DiasCredito = cliente.DiasCredito,
             DescuentoPorcentaje = cliente.DescuentoPorcentaje,
 
-            // Configuraciones
+         
             Activo = cliente.Activo,
             BloquearMarketing = cliente.BloquearMarketing,
             Observaciones1 = cliente.Observaciones1,
@@ -270,7 +267,7 @@ public class ClienteService : IClienteService
             ClaveAcceso = cliente.ClaveAcceso,
             CiudadNacimiento = cliente.CiudadNacimiento,
 
-            // Auditoría
+           
             FechaCreacion = cliente.FechaCreacion,
             FechaActualizacion = cliente.FechaActualizacion,
             CreadoPor = cliente.CreadoPor,

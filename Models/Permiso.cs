@@ -6,6 +6,5 @@ public class Permiso
     public string Nombre { get; set; }
     public string Descripcion { get; set; }
 
-    // Navegación
     public ICollection<RolPermiso> RolesPermisos { get; set; }
 }

@@ -8,6 +8,6 @@ public class Usuario
     public string Password { get; set; }
     public int RolId { get; set; }
 
-    // Navegación
+
     public Rol Rol { get; set; }
 }

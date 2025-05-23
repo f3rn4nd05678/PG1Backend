@@ -1,5 +1,4 @@
-﻿// Controllers/MenuController.cs
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProyectoGraduación.IServices;
 using ProyectoGraduación.IRepositories;
@@ -27,17 +26,17 @@ public class MenuController : ControllerBase
     {
         try
         {
-            // Obtener el ID del usuario del token
+ 
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return this.ApiError("Token inválido");
 
-            // Obtener el usuario con su rol
+     
             var usuario = await _usuarioRepository.GetById(int.Parse(userId));
             if (usuario == null)
                 return this.ApiNotFound("Usuario no encontrado");
 
-            // Obtener menús para el rol del usuario
+        
             var menus = await _menuService.GetMenusByRolId(usuario.RolId);
 
             return this.ApiOk(menus, "Menús obtenidos correctamente");

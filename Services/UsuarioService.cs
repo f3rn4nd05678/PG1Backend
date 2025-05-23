@@ -71,8 +71,7 @@ public class UsuarioService : IUsuarioService
         }
         catch (Exception ex)
         {
-            // Log detallado del error para diagnóstico
-            Console.WriteLine($"Error verificando contraseña: {ex.Message}");
+
             throw new Exception($"Error en la verificación: {ex.Message}");
         }
 
@@ -92,7 +91,7 @@ public class UsuarioService : IUsuarioService
         usuario.Nombre = usuarioDto.Nombre;
         usuario.Correo = usuarioDto.Correo;
 
-        // Solo actualizar password si se proporciona una nueva
+      
         if (!string.IsNullOrEmpty(usuarioDto.Password))
         {
             usuario.Password = BCrypt.Net.BCrypt.HashPassword(usuarioDto.Password);

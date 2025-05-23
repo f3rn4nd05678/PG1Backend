@@ -19,13 +19,13 @@ public class MenuRepository : IMenuRepository
 
     public async Task<IEnumerable<Menu>> GetMenusByRolId(int rolId)
     {
-        // Obtener los permisos asociados al rol
+       
         var permisosIds = await _context.RolesPermisos
             .Where(rp => rp.RolId == rolId)
             .Select(rp => rp.PermisoId)
             .ToListAsync();
 
-        // Obtener los menús asociados a esos permisos
+     
         return await _context.Menus
             .Where(m => permisosIds.Contains(m.PermisoId) && m.Activo)
             .OrderBy(m => m.Orden)
