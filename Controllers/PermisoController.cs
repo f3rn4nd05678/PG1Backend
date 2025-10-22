@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ProyectoGraduación.Models;
-using ProyectoGraduación.IServices;
 using ProyectoGraduación.DTOs;
+using ProyectoGraduación.IServices;
+using ProyectoGraduación.Extensions;
 
 namespace ProyectoGraduación.Controllers;
 
@@ -11,64 +11,128 @@ namespace ProyectoGraduación.Controllers;
 [Authorize(Roles = "Administrador")]
 public class PermisoController : ControllerBase
 {
-    private readonly IPermisoService _service;
+    private readonly IPermisoService _permisoService;
+    private readonly ILogger<PermisoController> _logger;
 
-    public PermisoController(IPermisoService service)
+    public PermisoController(IPermisoService permisoService, ILogger<PermisoController> logger)
     {
-        _service = service;
+        _permisoService = permisoService;
+        _logger = logger;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetAll() => Ok(await _service.GetAll());
-
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    /// <summary>
+    /// Listar todos los permisos
+    /// </summary>
+    [HttpPost("listar")]
+    public async Task<IActionResult> Listar()
     {
-        var permiso = await _service.GetById(id);
-        if (permiso == null)
-            return NotFound();
-        return Ok(permiso);
+        try
+        {
+            var permisos = await _permisoService.GetAll();
+
+            var permisosDto = permisos.Select(p => new PermisoDto
+            {
+                Id = p.Id,
+                Nombre = p.Nombre,
+                Descripcion = p.Descripcion
+            }).ToList();
+
+            return this.ApiOk(permisosDto, "Permisos obtenidos correctamente");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al listar permisos");
+            return this.ApiError(ex.Message);
+        }
     }
 
-    [HttpGet("por-rol/{rolId}")]
-    public async Task<IActionResult> GetPermisosByRolId(int rolId)
+    /// <summary>
+    /// Obtener permiso por ID
+    /// </summary>
+    [HttpPost("obtener")]
+    public async Task<IActionResult> Obtener([FromBody] int id)
     {
-        return Ok(await _service.GetPermisosByRolId(rolId));
+        try
+        {
+            var permiso = await _permisoService.GetById(id);
+            if (permiso == null)
+                return this.ApiNotFound("Permiso no encontrado");
+
+            var permisoDto = new PermisoDto
+            {
+                Id = permiso.Id,
+                Nombre = permiso.Nombre,
+                Descripcion = permiso.Descripcion
+            };
+
+            return this.ApiOk(permisoDto, "Permiso obtenido correctamente");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener permiso");
+            return this.ApiError(ex.Message);
+        }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Post([FromBody] Permiso permiso)
+    /// <summary>
+    /// Listar permisos de un rol específico
+    /// </summary>
+    [HttpPost("listar-por-rol")]
+    public async Task<IActionResult> ListarPorRol([FromBody] ListarPermisosPorRolDto request)
     {
-        await _service.Add(permiso);
-        return CreatedAtAction(nameof(GetById), new { id = permiso.Id }, permiso);
+        try
+        {
+            var permisos = await _permisoService.GetPermisosByRolId(request.RolId);
+
+            var permisosDto = permisos.Select(p => new PermisoDto
+            {
+                Id = p.Id,
+                Nombre = p.Nombre,
+                Descripcion = p.Descripcion
+            }).ToList();
+
+            return this.ApiOk(permisosDto, "Permisos del rol obtenidos correctamente");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al listar permisos por rol");
+            return this.ApiError(ex.Message);
+        }
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Put(int id, [FromBody] Permiso permiso)
+    /// <summary>
+    /// Asignar permiso a un rol
+    /// </summary>
+    [HttpPost("asignar-rol")]
+    public async Task<IActionResult> AsignarPermisoARol([FromBody] AsignarPermisoRequest request)
     {
-        permiso.Id = id;
-        await _service.Update(permiso);
-        return NoContent();
+        try
+        {
+            await _permisoService.AsignarPermisoARol(request.RolId, request.PermisoId);
+            return this.ApiOk(null, "Permiso asignado al rol exitosamente");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al asignar permiso a rol");
+            return this.ApiError(ex.Message);
+        }
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    /// <summary>
+    /// Remover permiso de un rol
+    /// </summary>
+    [HttpPost("remover-rol")]
+    public async Task<IActionResult> RemoverPermisoDeRol([FromBody] RemoverPermisoRequest request)
     {
-        await _service.Delete(id);
-        return NoContent();
-    }
-
-    [HttpPost("asignar")]
-    public async Task<IActionResult> AsignarPermisoARol([FromBody] AsignarPermisoDto dto)
-    {
-        await _service.AsignarPermisoARol(dto.RolId, dto.PermisoId);
-        return Ok();
-    }
-
-    [HttpDelete("remover")]
-    public async Task<IActionResult> RemoverPermisoDeRol([FromQuery] int rolId, [FromQuery] int permisoId)
-    {
-        await _service.RemoverPermisoDeRol(rolId, permisoId);
-        return Ok();
+        try
+        {
+            await _permisoService.RemoverPermisoDeRol(request.RolId, request.PermisoId);
+            return this.ApiOk(null, "Permiso removido del rol exitosamente");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al remover permiso de rol");
+            return this.ApiError(ex.Message);
+        }
     }
 }
