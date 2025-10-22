@@ -112,21 +112,50 @@ public class ClienteRepository : IClienteRepository
     {
         try
         {
+            cliente.Moneda = "GTQ"; 
+            cliente.Activo = true;      
             cliente.FechaCreacion = DateTime.UtcNow;
             cliente.FechaActualizacion = DateTime.UtcNow;
 
             _context.Clientes.Add(cliente);
             await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException dbEx)
+        {
+            _logger.LogError(dbEx, "DB error al crear cliente: {Inner}", dbEx.InnerException?.Message);
+            throw new Exception(dbEx.InnerException?.Message ?? dbEx.Message, dbEx);
+        }
+    }
+    public async Task Disable(int id, int usuarioId)
+    {
+        try
+        {
+            var cliente = await _context.Clientes.FindAsync(id);
+            if (cliente is null)
+            {
+                _logger.LogWarning("Intento de deshabilitar cliente inexistente ID: {Id}", id);
+                throw new Exception("Cliente no encontrado");
+            }
 
-            _logger.LogInformation("Cliente creado con ID: {Id}", cliente.Id);
+            cliente.Activo = false;                   // <- soft delete
+            cliente.ActualizadoPor = usuarioId;
+            cliente.FechaActualizacion = DateTime.UtcNow;
+
+            // Solo marca modificado esas columnas (evita tocar todo el objeto si no quieres)1
+            var entry = _context.Entry(cliente);
+            entry.Property(x => x.Activo).IsModified = true;
+            entry.Property(x => x.ActualizadoPor).IsModified = true;
+            entry.Property(x => x.FechaActualizacion).IsModified = true;
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Cliente deshabilitado ID: {Id}", id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al crear cliente: {Message}", ex.Message);
+            _logger.LogError(ex, "Error al deshabilitar cliente ID: {Id}", id);
             throw;
         }
     }
-
     public async Task Update(Cliente cliente)
     {
         try

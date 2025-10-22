@@ -14,6 +14,7 @@ public interface IClienteRepository
     Task<Cliente?> GetByCodigo(string codigo);
     Task Add(Cliente cliente);
     Task Update(Cliente cliente);
+    Task Disable(int id, int usuarioId);
     Task Delete(int id);
     Task<bool> ExisteCodigo(string codigo);
     Task<bool> ExisteNit(string nit);

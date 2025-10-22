@@ -4,6 +4,7 @@ using ProyectoGraduación.DTOs;
 using ProyectoGraduación.IServices;
 using ProyectoGraduación.Extensions;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 
 namespace ProyectoGraduación.Controllers;
 
@@ -141,8 +142,13 @@ public class ClienteController : ControllerBase
             }
 
             var cliente = await _clienteService.CreateCliente(crearClienteDto, userId);
-
             return this.ApiCreated(cliente, "Cliente creado exitosamente");
+        }
+        catch (DbUpdateException dbEx)
+        {
+            var detail = dbEx.InnerException?.Message ?? dbEx.Message;
+            _logger.LogError(dbEx, "DB error al crear cliente: {Detail}", detail);
+            return this.ApiError($"DB error: {detail}");
         }
         catch (Exception ex)
         {
@@ -194,23 +200,21 @@ public class ClienteController : ControllerBase
 
     [HttpPost("eliminar")]
     [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> Delete([FromBody] EliminarClienteDto request)
+    public async Task<IActionResult> Disable([FromBody] EliminarClienteDto request)
     {
         try
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-            {
                 return this.ApiError("Usuario no válido");
-            }
 
-            await _clienteService.DeleteCliente(request.Id, userId);
+            await _clienteService.DisableCliente(request.Id, userId);
 
-            return this.ApiOk("Cliente eliminado exitosamente");
+            return this.ApiOk("Cliente deshabilitado exitosamente");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al eliminar cliente ID: {Id}", request.Id);
+            _logger.LogError(ex, "Error al deshabilitar cliente ID: {Id}", request.Id);
             return this.ApiError(ex.Message);
         }
     }

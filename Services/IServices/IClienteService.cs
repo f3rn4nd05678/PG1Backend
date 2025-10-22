@@ -12,6 +12,7 @@ public interface IClienteService
     Task<IEnumerable<ClienteDto>> GetMultipleByCodigoNitOrNombre(string terminoBusqueda);
     Task<ClienteDto> CreateCliente(CrearClienteDto crearClienteDto, int usuarioId);
     Task<ClienteDto> UpdateCliente(int id, ActualizarClienteDto actualizarClienteDto, int usuarioId);
+    Task DisableCliente(int id, int usuarioId);
     Task DeleteCliente(int id, int usuarioId);
     Task<bool> ExisteCodigo(string codigo);
     Task<bool> ExisteNit(string nit);

@@ -69,7 +69,7 @@ public class ClienteService : IClienteService
                 Nombre = crearClienteDto.Nombre,
                 NombreExtranjero = crearClienteDto.NombreExtranjero,
                 Grupo = crearClienteDto.Grupo,
-                Moneda = crearClienteDto.Moneda,
+                Moneda = "GTQ",
                 Nit = crearClienteDto.Nit,
                 Direccion = crearClienteDto.Direccion,
                 Telefono1 = crearClienteDto.Telefono1,
@@ -149,7 +149,7 @@ public class ClienteService : IClienteService
             clienteExistente.Nombre = actualizarClienteDto.Nombre ?? clienteExistente.Nombre;
             clienteExistente.NombreExtranjero = actualizarClienteDto.NombreExtranjero;
             clienteExistente.Grupo = actualizarClienteDto.Grupo;
-            clienteExistente.Moneda = actualizarClienteDto.Moneda ?? clienteExistente.Moneda;
+            clienteExistente.Moneda = "GTQ";
             clienteExistente.Nit = actualizarClienteDto.Nit;
             clienteExistente.Direccion = actualizarClienteDto.Direccion;
             clienteExistente.Telefono1 = actualizarClienteDto.Telefono1;
@@ -193,7 +193,12 @@ public class ClienteService : IClienteService
             throw new Exception($"Error al actualizar el cliente: {ex.Message}", ex);
         }
     }
-
+    public async Task DisableCliente(int id, int usuarioId)
+    {
+        var cliente = await _repository.GetById(id) ?? throw new Exception("Cliente no encontrado");
+        await _repository.Disable(id, usuarioId);
+        _logger.LogInformation("Cliente deshabilitado por usuario {UserId}: Cliente ID {Id}", usuarioId, id);
+    }
     public async Task DeleteCliente(int id, int usuarioId)
     {
         try

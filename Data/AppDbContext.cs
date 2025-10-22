@@ -15,6 +15,8 @@ public class AppDbContext : DbContext
     public DbSet<RolPermiso> RolesPermisos { get; set; }
     public DbSet<Menu> Menus { get; set; }
     public DbSet<Cliente> Clientes { get; set; }
+    public DbSet<Proveedor> Proveedores { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,6 +41,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<RolPermiso>().ToTable("rol_permiso");
         modelBuilder.Entity<Menu>().ToTable("menu");
         modelBuilder.Entity<Producto>().ToTable("producto");
+        modelBuilder.Entity<Proveedor>().ToTable("proveedor");
 
 
         modelBuilder.Entity<Usuario>()
@@ -126,18 +129,48 @@ public class AppDbContext : DbContext
             .Property(m => m.PermisoId)
             .HasColumnName("id_permiso");
 
- 
+
+        // Configuración de Producto
         modelBuilder.Entity<Producto>()
             .Property(p => p.Id)
             .HasColumnName("id_producto");
 
         modelBuilder.Entity<Producto>()
             .Property(p => p.Nombre)
-            .HasColumnName("nombre");
+            .HasColumnName("nombre")
+            .IsRequired()
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<Producto>()
+            .Property(p => p.Codigo)
+            .HasColumnName("codigo")
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<Producto>()
+            .Property(p => p.Categoria)
+            .HasColumnName("categoria")
+            .HasMaxLength(50);
 
         modelBuilder.Entity<Producto>()
             .Property(p => p.Precio)
-            .HasColumnName("precio");
+            .HasColumnName("precio")
+            .HasColumnType("numeric(10,2)");
+
+        modelBuilder.Entity<Producto>()
+            .Property(p => p.StockMinimo)
+            .HasColumnName("stock_minimo");
+
+        modelBuilder.Entity<Producto>()
+            .Property(p => p.ProveedorId)
+            .HasColumnName("id_proveedor");
+
+        // Relación Producto -> Proveedor
+        modelBuilder.Entity<Producto>()
+            .HasOne(p => p.Proveedor)
+            .WithMany(pr => pr.Productos)
+            .HasForeignKey(p => p.ProveedorId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Cliente>().ToTable("cliente");
 
@@ -168,7 +201,9 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Cliente>()
             .Property(c => c.Moneda)
-            .HasColumnName("moneda");
+            .HasColumnName("moneda")
+            .HasMaxLength(10)
+            .HasDefaultValue("GTQ");
 
         modelBuilder.Entity<Cliente>()
             .Property(c => c.Nit)
@@ -236,7 +271,8 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Cliente>()
             .Property(c => c.Activo)
-            .HasColumnName("activo");
+            .HasColumnName("activo")
+            .HasDefaultValue(true);
 
         modelBuilder.Entity<Cliente>()
             .Property(c => c.BloquearMarketing)
@@ -273,6 +309,49 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Cliente>()
             .Property(c => c.ActualizadoPor)
             .HasColumnName("actualizado_por");
+
+        modelBuilder.Entity<Cliente>()
+        .HasQueryFilter(c => c.Activo);
+
+        // Configuración de Proveedor
+        modelBuilder.Entity<Proveedor>()
+            .Property(p => p.Id)
+            .HasColumnName("id_proveedor");
+
+        modelBuilder.Entity<Proveedor>()
+            .Property(p => p.Nombre)
+            .HasColumnName("nombre")
+            .IsRequired()
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<Proveedor>()
+            .Property(p => p.Contacto)
+            .HasColumnName("contacto")
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<Proveedor>()
+            .Property(p => p.Nit)
+            .HasColumnName("nit")
+            .HasMaxLength(20);
+
+        modelBuilder.Entity<Proveedor>()
+            .Property(p => p.Direccion)
+            .HasColumnName("direccion");
+
+        modelBuilder.Entity<Proveedor>()
+            .Property(p => p.Telefono)
+            .HasColumnName("telefono")
+            .HasMaxLength(20);
+
+        modelBuilder.Entity<Proveedor>()
+            .Property(p => p.Email)
+            .HasColumnName("email")
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<Proveedor>()
+            .Property(p => p.Activo)
+            .HasColumnName("activo")
+            .HasDefaultValue(true);
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
