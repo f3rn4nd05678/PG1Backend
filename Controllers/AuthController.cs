@@ -27,8 +27,9 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var token = await _usuarioService.Login(loginDto);
-            return this.ApiOk(new { token }, "Inicio de sesión exitoso");
+            var loginResponse = await _usuarioService.Login(loginDto);
+
+            return this.ApiOk(loginResponse, "Inicio de sesión exitoso");
         }
         catch (Exception ex)
         {

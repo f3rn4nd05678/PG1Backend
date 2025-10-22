@@ -16,13 +16,15 @@ public class UsuarioService : IUsuarioService
     private readonly IPasswordGeneratorService _passwordGenerator;
     private readonly IEmailService _emailService;
     private readonly ILogger<UsuarioService> _logger;
+    private readonly IConfiguration _configuration;
 
 
     public UsuarioService(
         IUsuarioRepository repository,
         IPasswordGeneratorService passwordGenerator,
         IEmailService emailService,
-        ILogger<UsuarioService> logger)
+        ILogger<UsuarioService> logger,
+        IConfiguration configuration)
     {
         _repository = repository;
         _passwordGenerator = passwordGenerator;
@@ -92,7 +94,7 @@ public class UsuarioService : IUsuarioService
         if (await _repository.ExisteCorreo(usuarioDto.Correo))
             throw new InvalidOperationException("El correo ya está registrado");
 
-        // Generar contraseña temporal
+        // Generar contraseña temporal SIEMPRE (ignorar si viene password)
         string passwordTemporal = _passwordGenerator.GenerarPasswordTemporal();
 
         _logger.LogInformation("Generando contraseña temporal para usuario {Correo}", usuarioDto.Correo);
@@ -103,8 +105,8 @@ public class UsuarioService : IUsuarioService
             Correo = usuarioDto.Correo,
             Password = BCrypt.Net.BCrypt.HashPassword(passwordTemporal),
             RolId = usuarioDto.RolId,
-            Activo = true,
-            ForzarCambioPassword = true,  // Siempre forzar en primer login
+            Activo = usuarioDto.Activo,
+            ForzarCambioPassword = true,
             UltimoLogin = null
         };
 
@@ -112,7 +114,6 @@ public class UsuarioService : IUsuarioService
 
         var usuarioCreado = await _repository.GetByCorreo(usuario.Correo);
 
-        // Enviar correo con credenciales (en segundo plano para no bloquear)
         _ = Task.Run(async () =>
         {
             try
@@ -131,12 +132,6 @@ public class UsuarioService : IUsuarioService
 
         return MapToDto(usuarioCreado);
     }
-    public class LoginResponseDto
-    {
-        public string Token { get; set; }
-        public UsuarioDto Usuario { get; set; }
-        public bool RequirePasswordChange { get; set; } 
-    }
 
     public async Task<LoginResponseDto> Login(LoginDto loginDto)
     {
@@ -151,7 +146,12 @@ public class UsuarioService : IUsuarioService
         if (!usuario.Activo)
             throw new UnauthorizedAccessException("Usuario inactivo");
 
-        // Actualizar último login (solo si no fuerza cambio de contraseña)
+        if (usuario.Rol == null)
+        {
+            _logger.LogError("Usuario {Correo} no tiene rol cargado", usuario.Correo);
+            throw new InvalidOperationException("Error en la configuración del usuario. Contacte al administrador.");
+        }
+
         if (!usuario.ForzarCambioPassword)
         {
             usuario.UltimoLogin = DateTime.UtcNow;
@@ -164,7 +164,7 @@ public class UsuarioService : IUsuarioService
         {
             Token = token,
             Usuario = MapToDto(usuario),
-            RequirePasswordChange = usuario.ForzarCambioPassword  // NUEVO
+            RequirePasswordChange = usuario.ForzarCambioPassword
         };
     }
 
@@ -176,19 +176,16 @@ public class UsuarioService : IUsuarioService
             throw new InvalidOperationException("Usuario no encontrado");
 
         if (usuario.Correo != usuarioDto.Correo && await _repository.ExisteCorreo(usuarioDto.Correo))
-            throw new InvalidOperationException("El correo ya está registrado por otro usuario");
+            throw new InvalidOperationException("El correo ya está registrado");
 
         usuario.Nombre = usuarioDto.Nombre;
         usuario.Correo = usuarioDto.Correo;
         usuario.RolId = usuarioDto.RolId;
+        usuario.Activo = usuarioDto.Activo;
 
-        if (usuarioDto.ForzarCambioPassword.HasValue)
-            usuario.ForzarCambioPassword = usuarioDto.ForzarCambioPassword.Value;
-
-        // Solo actualizar password si se proporciona uno nuevo
-        if (!string.IsNullOrEmpty(usuarioDto.Password))
+        if (usuarioDto.ForzarCambioPassword != usuario.ForzarCambioPassword)
         {
-            usuario.Password = BCrypt.Net.BCrypt.HashPassword(usuarioDto.Password);
+            usuario.ForzarCambioPassword = usuarioDto.ForzarCambioPassword;
         }
 
         await _repository.Update(usuario);
@@ -260,13 +257,22 @@ public class UsuarioService : IUsuarioService
 
     private string GenerarToken(Usuario usuario)
     {
+        if (usuario == null)
+            throw new ArgumentNullException(nameof(usuario));
+
+        if (usuario.Rol == null)
+        {
+            _logger.LogError("Usuario {Id} no tiene rol asignado", usuario.Id);
+            throw new InvalidOperationException("El usuario no tiene un rol asignado");
+        }
+
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
-            new Claim(ClaimTypes.Name, usuario.Nombre),
-            new Claim(ClaimTypes.Email, usuario.Correo),
-            new Claim(ClaimTypes.Role, usuario.Rol?.Nombre ?? "Sin Rol")
-        };
+        new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+        new Claim(ClaimTypes.Name, usuario.Nombre),
+        new Claim(ClaimTypes.Email, usuario.Correo),
+        new Claim(ClaimTypes.Role, usuario.Rol.Nombre ?? "Sin Rol")
+    };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
             _configuration["Jwt:Key"] ?? "Plastihogar2025$"));
@@ -296,7 +302,7 @@ public class UsuarioService : IUsuarioService
             ForzarCambioPassword = usuario.ForzarCambioPassword
         };
     }
-    // Nuevo método para cambiar contraseña en primer login
+
     public async Task CambiarPasswordPrimerLogin(int userId, string nuevaPassword)
     {
         var usuario = await _repository.GetById(userId);
@@ -314,7 +320,6 @@ public class UsuarioService : IUsuarioService
 
         await _repository.Update(usuario);
 
-        // Enviar notificación de cambio de contraseña
         _ = Task.Run(async () =>
         {
             try

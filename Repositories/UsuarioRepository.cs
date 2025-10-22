@@ -14,14 +14,28 @@ public class UsuarioRepository : IUsuarioRepository
         _context = context;
     }
 
+    // Deja UN SOLO GetAll
     public async Task<IEnumerable<Usuario>> GetAll() =>
-        await _context.Usuarios.Include(u => u.Rol).ToListAsync();
+        await _context.Usuarios
+            .Include(u => u.Rol)
+            .AsNoTracking()
+            .ToListAsync();
 
-    public async Task<Usuario> GetById(int id) =>
-        await _context.Usuarios.Include(u => u.Rol).FirstOrDefaultAsync(u => u.Id == id);
+    public async Task<Usuario?> GetByCorreo(string correo)
+    {
+        return await _context.Usuarios
+            .Include(u => u.Rol)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Correo == correo);
+    }
 
-    public async Task<Usuario> GetByCorreo(string correo) =>
-        await _context.Usuarios.Include(u => u.Rol).FirstOrDefaultAsync(u => u.Correo == correo);
+    public async Task<Usuario?> GetById(int id)
+    {
+        return await _context.Usuarios
+            .Include(u => u.Rol)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == id);
+    }
 
     public async Task Add(Usuario usuario)
     {
@@ -53,6 +67,7 @@ public class UsuarioRepository : IUsuarioRepository
         return await _context.Usuarios
             .Where(u => u.RolId == rolId)
             .Include(u => u.Rol)
+            .AsNoTracking()
             .ToListAsync();
     }
 }

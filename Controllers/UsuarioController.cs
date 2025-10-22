@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using ProyectoGraduación.DTOs;
 using ProyectoGraduación.IServices;
 using ProyectoGraduación.Extensions;
+using ProyectoGraduación.IRepositories;
 
 namespace ProyectoGraduación.Controllers;
 
@@ -13,8 +14,9 @@ public class UsuarioController : ControllerBase
 {
     private readonly IUsuarioService _usuarioService;
     private readonly ILogger<UsuarioController> _logger;
+    private readonly IUsuarioRepository _usuarioRepository;
 
-    public UsuarioController(IUsuarioService usuarioService, ILogger<UsuarioController> logger)
+    public UsuarioController(IUsuarioService usuarioService, ILogger<UsuarioController> logger, IUsuarioRepository usuarioRepository)
     {
         _usuarioService = usuarioService;
         _logger = logger;
