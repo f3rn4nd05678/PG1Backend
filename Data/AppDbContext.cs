@@ -64,6 +64,21 @@ public class AppDbContext : DbContext
             .Property(u => u.RolId)
             .HasColumnName("id_rol");
 
+        modelBuilder.Entity<Usuario>()
+    .Property(u => u.Activo)
+    .HasColumnName("activo")
+    .HasDefaultValue(true);
+
+        modelBuilder.Entity<Usuario>()
+            .Property(u => u.UltimoLogin)
+            .HasColumnName("ultimo_login")
+            .IsRequired(false);
+
+        modelBuilder.Entity<Usuario>()
+            .Property(u => u.ForzarCambioPassword)
+            .HasColumnName("forzar_cambio_password")
+            .HasDefaultValue(false);
+
 
         modelBuilder.Entity<Rol>()
             .Property(r => r.Id)
@@ -72,6 +87,12 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Rol>()
             .Property(r => r.Nombre)
             .HasColumnName("nombre");
+
+        modelBuilder.Entity<Rol>()
+    .Property(r => r.Descripcion)
+    .HasColumnName("descripcion")
+    .HasMaxLength(255)
+    .IsRequired(false);
 
 
         modelBuilder.Entity<Permiso>()

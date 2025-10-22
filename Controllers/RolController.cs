@@ -180,7 +180,7 @@ public class RolController : ControllerBase
                 return this.ApiError("No se pueden eliminar los roles predefinidos del sistema");
 
             await _rolService.Delete(request.Id);
-            return this.ApiOk(null, "Rol eliminado exitosamente");
+            return this.ApiOk<object>(null, "Rol eliminado exitosamente");
         }
         catch (Exception ex)
         {

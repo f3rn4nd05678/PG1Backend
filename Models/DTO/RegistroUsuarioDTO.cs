@@ -6,4 +6,5 @@ public class RegistroUsuarioDto
     public string Correo { get; set; }
     public string Password { get; set; }
     public int RolId { get; set; }
+    public bool? ForzarCambioPassword { get; set; }
 }

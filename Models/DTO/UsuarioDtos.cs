@@ -2,6 +2,7 @@
 
 // ===== DTOs de Usuario =====
 
+
 public class FiltroUsuarioDto
 {
     public string? TerminoBusqueda { get; set; }

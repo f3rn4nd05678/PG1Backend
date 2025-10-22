@@ -109,7 +109,7 @@ public class PermisoController : ControllerBase
         try
         {
             await _permisoService.AsignarPermisoARol(request.RolId, request.PermisoId);
-            return this.ApiOk(null, "Permiso asignado al rol exitosamente");
+            return this.ApiOk<object>(null, "Permiso asignado al rol exitosamente");
         }
         catch (Exception ex)
         {
@@ -127,7 +127,7 @@ public class PermisoController : ControllerBase
         try
         {
             await _permisoService.RemoverPermisoDeRol(request.RolId, request.PermisoId);
-            return this.ApiOk(null, "Permiso removido del rol exitosamente");
+            return this.ApiOk<object>(null, "Permiso removido del rol exitosamente");
         }
         catch (Exception ex)
         {

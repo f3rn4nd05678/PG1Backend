@@ -13,12 +13,21 @@ namespace ProyectoGraduación.Services;
 public class UsuarioService : IUsuarioService
 {
     private readonly IUsuarioRepository _repository;
-    private readonly IConfiguration _configuration;
+    private readonly IPasswordGeneratorService _passwordGenerator;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<UsuarioService> _logger;
 
-    public UsuarioService(IUsuarioRepository repository, IConfiguration configuration)
+
+    public UsuarioService(
+        IUsuarioRepository repository,
+        IPasswordGeneratorService passwordGenerator,
+        IEmailService emailService,
+        ILogger<UsuarioService> logger)
     {
         _repository = repository;
-        _configuration = configuration;
+        _passwordGenerator = passwordGenerator;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<UsuarioDto>> GetAll()
@@ -83,48 +92,80 @@ public class UsuarioService : IUsuarioService
         if (await _repository.ExisteCorreo(usuarioDto.Correo))
             throw new InvalidOperationException("El correo ya está registrado");
 
+        // Generar contraseña temporal
+        string passwordTemporal = _passwordGenerator.GenerarPasswordTemporal();
+
+        _logger.LogInformation("Generando contraseña temporal para usuario {Correo}", usuarioDto.Correo);
+
         var usuario = new Usuario
         {
             Nombre = usuarioDto.Nombre,
             Correo = usuarioDto.Correo,
-            Password = BCrypt.Net.BCrypt.HashPassword(usuarioDto.Password),
+            Password = BCrypt.Net.BCrypt.HashPassword(passwordTemporal),
             RolId = usuarioDto.RolId,
             Activo = true,
-            ForzarCambioPassword = usuarioDto.ForzarCambioPassword ?? false
+            ForzarCambioPassword = true,  // Siempre forzar en primer login
+            UltimoLogin = null
         };
 
         await _repository.Add(usuario);
 
         var usuarioCreado = await _repository.GetByCorreo(usuario.Correo);
+
+        // Enviar correo con credenciales (en segundo plano para no bloquear)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _emailService.EnviarCredencialesNuevoUsuario(
+                    usuarioCreado.Correo,
+                    usuarioCreado.Nombre,
+                    passwordTemporal
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar correo de bienvenida a {Correo}", usuarioCreado.Correo);
+            }
+        });
+
         return MapToDto(usuarioCreado);
     }
+    public class LoginResponseDto
+    {
+        public string Token { get; set; }
+        public UsuarioDto Usuario { get; set; }
+        public bool RequirePasswordChange { get; set; } 
+    }
 
-    public async Task<string> Login(LoginDto loginDto)
+    public async Task<LoginResponseDto> Login(LoginDto loginDto)
     {
         var usuario = await _repository.GetByCorreo(loginDto.Correo);
 
         if (usuario == null)
-            throw new InvalidOperationException("Usuario no encontrado");
+            throw new UnauthorizedAccessException("Credenciales inválidas");
+
+        if (!BCrypt.Net.BCrypt.Verify(loginDto.Password, usuario.Password))
+            throw new UnauthorizedAccessException("Credenciales inválidas");
 
         if (!usuario.Activo)
-            throw new InvalidOperationException("El usuario está inactivo");
+            throw new UnauthorizedAccessException("Usuario inactivo");
 
-        try
+        // Actualizar último login (solo si no fuerza cambio de contraseña)
+        if (!usuario.ForzarCambioPassword)
         {
-            bool passwordCoincide = BCrypt.Net.BCrypt.Verify(loginDto.Password, usuario.Password);
-            if (!passwordCoincide)
-                throw new InvalidOperationException("Contraseña incorrecta");
-        }
-        catch (Exception ex) when (!(ex is InvalidOperationException))
-        {
-            throw new InvalidOperationException($"Error en la verificación: {ex.Message}");
+            usuario.UltimoLogin = DateTime.UtcNow;
+            await _repository.Update(usuario);
         }
 
-        // Actualizar último login
-        usuario.UltimoLogin = DateTime.UtcNow;
-        await _repository.Update(usuario);
+        var token = GenerarToken(usuario);
 
-        return GenerarToken(usuario);
+        return new LoginResponseDto
+        {
+            Token = token,
+            Usuario = MapToDto(usuario),
+            RequirePasswordChange = usuario.ForzarCambioPassword  // NUEVO
+        };
     }
 
     public async Task Update(int id, RegistroUsuarioDto usuarioDto)
@@ -216,6 +257,7 @@ public class UsuarioService : IUsuarioService
         await _repository.Update(usuario);
     }
 
+
     private string GenerarToken(Usuario usuario)
     {
         var claims = new[]
@@ -253,5 +295,38 @@ public class UsuarioService : IUsuarioService
             UltimoLogin = usuario.UltimoLogin,
             ForzarCambioPassword = usuario.ForzarCambioPassword
         };
+    }
+    // Nuevo método para cambiar contraseña en primer login
+    public async Task CambiarPasswordPrimerLogin(int userId, string nuevaPassword)
+    {
+        var usuario = await _repository.GetById(userId);
+        if (usuario == null)
+            throw new InvalidOperationException("Usuario no encontrado");
+
+        if (!_passwordGenerator.ValidarFortalezaPassword(nuevaPassword))
+            throw new InvalidOperationException(
+                "La contraseña no cumple con los requisitos de seguridad: " +
+                "mínimo 8 caracteres, mayúsculas, minúsculas, números y caracteres especiales");
+
+        usuario.Password = BCrypt.Net.BCrypt.HashPassword(nuevaPassword);
+        usuario.ForzarCambioPassword = false;
+        usuario.UltimoLogin = DateTime.UtcNow;
+
+        await _repository.Update(usuario);
+
+        // Enviar notificación de cambio de contraseña
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _emailService.EnviarNotificacionCambioPassword(usuario.Correo, usuario.Nombre);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar notificación de cambio de contraseña");
+            }
+        });
+
+        _logger.LogInformation("Usuario {Correo} cambió su contraseña exitosamente", usuario.Correo);
     }
 }

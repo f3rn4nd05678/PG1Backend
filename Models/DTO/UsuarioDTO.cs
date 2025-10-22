@@ -7,4 +7,8 @@ public class UsuarioDto
     public string Correo { get; set; }
     public int RolId { get; set; }
     public string RolNombre { get; set; }
+
+    public bool Activo { get; set; }
+    public DateTime? UltimoLogin { get; set; }
+    public bool ForzarCambioPassword { get; set; }
 }

@@ -20,9 +20,6 @@ public class UsuarioController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Listar usuarios con filtros y paginación
-    /// </summary>
     [HttpPost("listar")]
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> Listar([FromBody] FiltroUsuarioDto? filtro = null)
@@ -54,9 +51,6 @@ public class UsuarioController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Obtener usuario por ID
-    /// </summary>
     [HttpPost("obtener")]
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> Obtener([FromBody] ObtenerUsuarioPorIdDto request)
@@ -76,9 +70,6 @@ public class UsuarioController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Crear nuevo usuario
-    /// </summary>
     [HttpPost("crear")]
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> Crear([FromBody] RegistroUsuarioDto usuarioDto)
@@ -103,9 +94,6 @@ public class UsuarioController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Actualizar usuario existente
-    /// </summary>
     [HttpPost("actualizar")]
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> Actualizar([FromBody] ActualizarUsuarioRequest request)
@@ -135,9 +123,6 @@ public class UsuarioController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Eliminar usuario
-    /// </summary>
     [HttpPost("eliminar")]
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> Eliminar([FromBody] EliminarUsuarioDto request)
@@ -145,7 +130,7 @@ public class UsuarioController : ControllerBase
         try
         {
             await _usuarioService.Delete(request.Id);
-            return this.ApiOk(null, "Usuario eliminado exitosamente");
+            return this.ApiOk<object>(null, "Usuario eliminado exitosamente");
         }
         catch (Exception ex)
         {
@@ -154,9 +139,7 @@ public class UsuarioController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Validar si un correo ya existe
-    /// </summary>
+
     [HttpPost("validar-correo")]
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> ValidarCorreo([FromBody] ValidarCorreoDto request)
@@ -181,9 +164,6 @@ public class UsuarioController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Cambiar contraseña de usuario
-    /// </summary>
     [HttpPost("cambiar-password")]
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> CambiarPassword([FromBody] CambiarPasswordDto request)
@@ -191,7 +171,7 @@ public class UsuarioController : ControllerBase
         try
         {
             await _usuarioService.CambiarPassword(request.Id, request.NuevaPassword);
-            return this.ApiOk(null, "Contraseña actualizada exitosamente");
+            return this.ApiOk<object>(null, "Contraseña actualizada exitosamente");
         }
         catch (Exception ex)
         {
@@ -200,9 +180,7 @@ public class UsuarioController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Activar o desactivar usuario
-    /// </summary>
+
     [HttpPost("activar-desactivar")]
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> ActivarDesactivar([FromBody] ActivarDesactivarUsuarioDto request)
@@ -211,12 +189,45 @@ public class UsuarioController : ControllerBase
         {
             await _usuarioService.ActivarDesactivar(request.Id, request.Activo);
             var mensaje = request.Activo ? "Usuario activado exitosamente" : "Usuario desactivado exitosamente";
-            return this.ApiOk(null, mensaje);
+            return this.ApiOk<object>(null, mensaje);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al activar/desactivar usuario");
             return this.ApiError(ex.Message);
+        }
+    }
+
+    [HttpPost("cambiar-password-primer-login")]
+    [AllowAnonymous]
+    public async Task<IActionResult> CambiarPasswordPrimerLogin([FromBody] CambiarPasswordPrimerLoginDto request)
+    {
+        try
+        {
+            // Validar que el usuario realmente tiene el flag de forzar cambio
+            var usuario = await _usuarioRepository.GetByCorreo(request.Correo);
+
+            if (usuario == null)
+                return this.ApiError("Usuario no encontrado");
+
+            if (!BCrypt.Net.BCrypt.Verify(request.PasswordActual, usuario.Password))
+                return this.ApiError("Contraseña actual incorrecta");
+
+            if (!usuario.ForzarCambioPassword)
+                return this.ApiError("Este usuario no requiere cambio de contraseña");
+
+            await _usuarioService.CambiarPasswordPrimerLogin(usuario.Id, request.NuevaPassword);
+
+            return this.ApiOk<object>(null, "Contraseña actualizada exitosamente");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return this.ApiError(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al cambiar contraseña en primer login");
+            return this.ApiError("Error al cambiar contraseña");
         }
     }
 }
