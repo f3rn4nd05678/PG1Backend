@@ -20,6 +20,7 @@ public class UsuarioController : ControllerBase
     {
         _usuarioService = usuarioService;
         _logger = logger;
+        _usuarioRepository = usuarioRepository;
     }
 
     [HttpPost("listar")]

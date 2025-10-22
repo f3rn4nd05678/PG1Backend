@@ -30,6 +30,7 @@ public class UsuarioService : IUsuarioService
         _passwordGenerator = passwordGenerator;
         _emailService = emailService;
         _logger = logger;
+        _configuration = configuration;
     }
 
     public async Task<IEnumerable<UsuarioDto>> GetAll()
