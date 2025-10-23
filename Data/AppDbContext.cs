@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<Bodega> Bodegas { get; set; }
     public DbSet<Stock> Stocks { get; set; }
     public DbSet<Bitacora> Bitacoras { get; set; }
+    public DbSet<MovimientoInventario> MovimientosInventario { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -40,6 +41,55 @@ public class AppDbContext : DbContext
             .HasOne(rp => rp.Permiso)
             .WithMany(p => p.RolesPermisos)
             .HasForeignKey(rp => rp.PermisoId);
+
+        // 🆕 Configuración de Stock (llave compuesta única)
+        modelBuilder.Entity<Stock>()
+            .HasIndex(s => new { s.IdProducto, s.IdBodega })
+            .IsUnique();
+
+        // 🆕 Configuración de cantidad_disponible como columna computada
+        modelBuilder.Entity<Stock>()
+            .Property(s => s.CantidadDisponible)
+            .HasComputedColumnSql("(cantidad_actual - cantidad_reservada)", stored: true);
+
+        // 🆕 Restricciones CHECK para Stock
+        modelBuilder.Entity<Stock>()
+            .ToTable(t => t.HasCheckConstraint(
+                "chk_stock_cantidades",
+                "cantidad_actual >= 0 AND cantidad_minima >= 0 AND cantidad_reservada >= 0 AND cantidad_reservada <= cantidad_actual"
+            ));
+
+        // 🆕 Restricciones CHECK para MovimientoInventario
+        modelBuilder.Entity<MovimientoInventario>()
+            .ToTable(t => t.HasCheckConstraint(
+                "chk_movimiento_tipo",
+                "tipo IN ('Entrada', 'Salida', 'Ajuste', 'Transferencia')"
+            ));
+
+        modelBuilder.Entity<MovimientoInventario>()
+            .ToTable(t => t.HasCheckConstraint(
+                "chk_movimiento_cantidad",
+                "cantidad != 0"
+            ));
+
+        // Índices para mejorar performance
+        modelBuilder.Entity<MovimientoInventario>()
+            .HasIndex(m => m.IdProducto);
+
+        modelBuilder.Entity<MovimientoInventario>()
+            .HasIndex(m => m.IdBodega);
+
+        modelBuilder.Entity<MovimientoInventario>()
+            .HasIndex(m => m.Fecha);
+
+        modelBuilder.Entity<MovimientoInventario>()
+            .HasIndex(m => m.Tipo);
+
+        modelBuilder.Entity<Stock>()
+            .HasIndex(s => s.IdProducto);
+
+        modelBuilder.Entity<Stock>()
+            .HasIndex(s => s.IdBodega);
 
         // ========================================
         // Mapeo de tablas

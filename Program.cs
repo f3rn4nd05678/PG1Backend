@@ -95,6 +95,8 @@ builder.Services.AddScoped<IMenuRepository, MenuRepository>();
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IBodegaRepository, BodegaRepository>();
+builder.Services.AddScoped<IStockRepository, StockRepository>();
+builder.Services.AddScoped<IMovimientoInventarioRepository, MovimientoInventarioRepository>();
 
 // Servicios
 builder.Services.AddScoped<IClienteService, ClienteService>();
@@ -108,6 +110,8 @@ builder.Services.AddScoped<IPasswordGeneratorService, PasswordGeneratorService>(
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ICategoriaService, CategoriaService>();
 builder.Services.AddScoped<IBodegaService, BodegaService>();
+builder.Services.AddScoped<IStockService, StockService>();
+builder.Services.AddScoped<IMovimientoInventarioService, MovimientoInventarioService>();
 
 builder.Services.AddCors(options =>
 {
