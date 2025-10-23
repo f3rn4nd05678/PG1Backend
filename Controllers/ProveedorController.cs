@@ -4,6 +4,7 @@ using ProyectoGraduación.DTOs;
 using ProyectoGraduación.IServices;
 using ProyectoGraduación.Extensions;
 using ProyectoGraduación.Services;
+using ProyectoGraduación.Services.IServices;
 
 namespace ProyectoGraduación.Controllers;
 
@@ -51,7 +52,9 @@ public class ProveedorController : ControllerBase
         {
             filtro ??= new FiltroProveedorDto();
 
-            var (proveedores, total) = await _proveedorService.GetWithFilters(filtro);
+            var resultado = await _proveedorService.GetWithFilters(filtro);
+            var proveedores = resultado.proveedores.ToList();
+            var total = resultado.total;
 
             var response = new
             {

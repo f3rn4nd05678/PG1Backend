@@ -251,6 +251,8 @@ public class AppDbContext : DbContext
             .HasIndex(p => p.Codigo)
             .IsUnique();
 
+        modelBuilder.Entity<Producto>().HasQueryFilter(p => p.Activo);
+
         // Relación Producto -> Categoria
         modelBuilder.Entity<Producto>()
             .HasOne(p => p.Categoria)
@@ -299,8 +301,9 @@ public class AppDbContext : DbContext
             .HasDefaultValue("GTQ");
 
         modelBuilder.Entity<Cliente>()
-            .Property(c => c.Nit)
-            .HasColumnName("nit");
+            .HasIndex(c => c.Nit)
+            .IsUnique()
+            .HasFilter("activo = TRUE AND nit IS NOT NULL");
 
         modelBuilder.Entity<Cliente>()
             .Property(c => c.Direccion)
@@ -405,10 +408,6 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Cliente>()
             .HasIndex(c => c.Codigo)
-            .IsUnique();
-
-        modelBuilder.Entity<Cliente>()
-            .HasIndex(c => c.Nit)
             .IsUnique();
 
         modelBuilder.Entity<Cliente>()

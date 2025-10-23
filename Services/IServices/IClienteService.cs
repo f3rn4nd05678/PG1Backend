@@ -25,4 +25,5 @@ public interface IClienteService
     Task<bool> DeleteCliente(int id, int usuarioId);
     Task<bool> ExisteCodigo(string codigo);
     Task<bool> ExisteNit(string nit);
+    Task<bool> ExisteNit(string nit, int? idExcluir);
 }

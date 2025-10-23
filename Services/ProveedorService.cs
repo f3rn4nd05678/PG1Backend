@@ -2,6 +2,8 @@
 using ProyectoGraduación.DTOs;
 using ProyectoGraduación.IRepositories;
 using ProyectoGraduación.IServices;
+using ProyectoGraduación.Services.IServices;
+using ProyectoGraduación.Repositories.IRepositories;
 
 namespace ProyectoGraduación.Services;
 
@@ -22,14 +24,14 @@ public class ProveedorService : IProveedorService
 
     public async Task<(IEnumerable<ProveedorDto> proveedores, int total)> GetWithFilters(FiltroProveedorDto filtro)
     {
-        var (proveedores, total) = await _proveedorRepository.GetWithFilters(
+        var resultado = await _proveedorRepository.GetWithFilters(
             filtro.TerminoBusqueda,
             filtro.Activo,
             filtro.NumeroPagina,
             filtro.TamanoPagina);
 
-        var proveedoresDto = proveedores.Select(MapToDto);
-        return (proveedoresDto, total);
+        var proveedoresDto = resultado.Item1.Select(MapToDto).ToList();
+        return (proveedoresDto, resultado.Item2);
     }
 
     public async Task<ProveedorDto?> GetById(int id)

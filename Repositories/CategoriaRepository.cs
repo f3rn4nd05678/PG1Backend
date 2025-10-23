@@ -63,4 +63,34 @@ public class CategoriaRepository : ICategoriaRepository
         return await _context.Categorias
             .AnyAsync(c => c.CodigoPrefijo == prefijo && (idExcluir == null || c.Id != idExcluir));
     }
+    public async Task<IEnumerable<Categoria>> ObtenerActivosAsync()
+    {
+        return await _context.Categorias
+            .Where(c => c.Activo)
+            .OrderBy(c => c.Nombre)
+            .ToListAsync();
+    }
+
+    public async Task<Categoria?> ObtenerPorCodigoPrefijoAsync(string codigoPrefijo)
+    {
+        return await _context.Categorias
+            .FirstOrDefaultAsync(c => c.CodigoPrefijo == codigoPrefijo);
+    }
+
+    public async Task<bool> ExisteCodigoPrefijo(string codigoPrefijo, int? idExcluir = null)
+    {
+        return await _context.Categorias
+            .AnyAsync(c => c.CodigoPrefijo == codigoPrefijo &&
+                          (idExcluir == null || c.Id != idExcluir.Value) &&
+                          c.Activo);
+    }
+
+    public async Task<bool> ExisteNombre(string nombre, int? idExcluir = null)
+    {
+        return await _context.Categorias
+            .AnyAsync(c => c.Nombre == nombre &&
+                          (idExcluir == null || c.Id != idExcluir.Value) &&
+                          c.Activo);
+    }
+
 }

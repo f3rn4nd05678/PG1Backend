@@ -13,6 +13,7 @@ public class ProveedorDto
     public string? Telefono { get; set; }
     public string? Email { get; set; }
     public bool Activo { get; set; }
+    public int CantidadProductos { get; set; }
 }
 
 public class CrearProveedorDto
@@ -63,7 +64,8 @@ public class ActualizarProveedorDto
 
 public class FiltroProveedorDto
 {
-    public string? Termino { get; set; }
+    public string? TerminoBusqueda { get; set; }
+    public bool? Activo { get; set; }
     public int NumeroPagina { get; set; } = 1;
     public int TamanoPagina { get; set; } = 10;
 }

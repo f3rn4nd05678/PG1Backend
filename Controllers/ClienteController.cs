@@ -5,6 +5,7 @@ using ProyectoGraduación.IServices;
 using ProyectoGraduación.Extensions;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using ProyectoGraduación.Services.IServices;
 
 namespace ProyectoGraduación.Controllers;
 
@@ -57,7 +58,9 @@ public class ClienteController : ControllerBase
             if (filtro.ElementosPorPagina <= 0)
                 filtro.ElementosPorPagina = 10;
 
-            var (clientes, total) = await _clienteService.GetWithFilters(filtro);
+            var resultado = await _clienteService.GetWithFilters(filtro);
+            var clientes = resultado.Item1.ToList();
+            var total = resultado.Item2;
 
             var response = new ListadoClientesResponseDto
             {
@@ -248,7 +251,7 @@ public class ClienteController : ControllerBase
     {
         try
         {
-            var existe = await _clienteService.ExisteNit(request.Nit);
+            var existe = await _clienteService.ExisteNit(request.Nit,null);
             var response = new ValidacionResponseDto
             {
                 Existe = existe,

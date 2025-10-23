@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ProyectoGraduación.Models;
 using ProyectoGraduación.Data;
-using ProyectoGraduación.IRepositories;
+using ProyectoGraduación.Repositories.IRepositories;
 
 namespace ProyectoGraduación.Repositories;
 

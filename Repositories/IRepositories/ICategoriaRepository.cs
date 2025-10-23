@@ -11,4 +11,10 @@ public interface ICategoriaRepository
     Task<bool> EliminarAsync(int id);
     Task<bool> ExisteNombreAsync(string nombre, int? idExcluir = null);
     Task<bool> ExistePrefijoAsync(string prefijo, int? idExcluir = null);
+
+    Task<IEnumerable<Categoria>> ObtenerActivosAsync();
+    Task<Categoria?> ObtenerPorCodigoPrefijoAsync(string codigoPrefijo);
+    Task<bool> ExisteCodigoPrefijo(string codigoPrefijo, int? idExcluir = null);
+    Task<bool> ExisteNombre(string nombre, int? idExcluir = null);
+
 }

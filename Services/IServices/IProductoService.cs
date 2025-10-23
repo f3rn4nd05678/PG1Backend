@@ -17,8 +17,8 @@ public interface IProductoService
     Task<IEnumerable<ProductoDto>> GetByProveedor(int proveedorId);
     Task<IEnumerable<ProductoDto>> SearchByNombreOrCodigo(string termino);
     Task<IEnumerable<CategoriaDto>> GetCategorias();
-    Task<ProductoDto> CreateProducto(CrearProductoDto dto);
-    Task<bool> UpdateProducto(int id, ActualizarProductoDto dto);
-    Task<bool> DeleteProducto(int id);
     Task<bool> ExisteCodigo(string codigo, int? idExcluir = null);
+    Task<ProductoDto> CreateProducto(CrearProductoDto dto);
+    Task<ProductoDto> UpdateProducto(int id, ActualizarProductoDto dto);
+    Task DeleteProducto(int id);
 }

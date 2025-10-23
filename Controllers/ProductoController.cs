@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using ProyectoGraduación.DTOs;
 using ProyectoGraduación.IServices;
 using ProyectoGraduación.Extensions;
+using ProyectoGraduación.Services.IServices;
+
 
 namespace ProyectoGraduación.Controllers;
 
@@ -50,7 +52,9 @@ public class ProductoController : ControllerBase
         {
             filtro ??= new FiltroProductoDto();
 
-            var (productos, total) = await _productoService.GetWithFilters(filtro);
+            var resultado = await _productoService.GetWithFilters(filtro);
+            var productos = resultado.Item1.ToList();
+            var total = resultado.Item2;
 
             var response = new
             {

@@ -14,6 +14,7 @@ public class ProductoDto
     public int StockMinimo { get; set; }
     public int? ProveedorId { get; set; }
     public string? ProveedorNombre { get; set; }
+    public bool Activo { get; set; }
 }
 
 // DTO para crear producto

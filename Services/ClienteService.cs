@@ -1,4 +1,6 @@
-﻿using ProyectoGraduación.DTOs;
+﻿using Microsoft.EntityFrameworkCore;
+using ProyectoGraduación.Data;
+using ProyectoGraduación.DTOs;
 using ProyectoGraduación.Models;
 using ProyectoGraduación.Repositories.IRepositories;
 using ProyectoGraduación.Services.IServices;
@@ -9,9 +11,9 @@ public class ClienteService : IClienteService
 {
     private readonly IClienteRepository _clienteRepository;
 
-    public ClienteService(IClienteRepository clienteRepository)
+    public ClienteService(IClienteRepository repo)
     {
-        _clienteRepository = clienteRepository;
+        _clienteRepository = repo;
     }
 
     // Métodos principales
@@ -38,7 +40,7 @@ public class ClienteService : IClienteService
         // Validar NIT único si se proporciona
         if (!string.IsNullOrEmpty(dto.Nit))
         {
-            var existeNit = await _clienteRepository.ExisteNit(dto.Nit);
+            var existeNit = await _clienteRepository.ExisteNit(dto.Nit);  // <- Usar repositorio
             if (existeNit)
                 throw new InvalidOperationException("Ya existe un cliente con ese NIT");
         }
@@ -76,7 +78,7 @@ public class ClienteService : IClienteService
             FechaActualizacion = DateTime.UtcNow
         };
 
-        var clienteCreado = await _clienteRepository.Create(cliente);
+        var clienteCreado = await _clienteRepository.Add(cliente);
         return MapToDto(clienteCreado);
     }
 
@@ -89,7 +91,7 @@ public class ClienteService : IClienteService
         // Validar NIT único
         if (!string.IsNullOrEmpty(dto.Nit))
         {
-            var existeNit = await _clienteRepository.ExisteNit(dto.Nit, id);
+            var existeNit = await _clienteRepository.ExisteNit(dto.Nit, id);  // <- Usar repositorio
             if (existeNit)
                 throw new InvalidOperationException("Ya existe otro cliente con ese NIT");
         }
@@ -133,8 +135,7 @@ public class ClienteService : IClienteService
 
     public async Task<IEnumerable<ClienteDto>> BuscarAsync(string? nombre, string? nit, string? codigo)
     {
-        var clientes = await _clienteRepository.Search(nombre, nit, codigo);
-        return clientes.Select(c => MapToDto(c)).ToList();
+        throw new NotImplementedException("Usar GetMultipleByCodigoNitOrNombre");
     }
 
     // Métodos de compatibilidad (alias)
@@ -145,9 +146,9 @@ public class ClienteService : IClienteService
 
     public async Task<(IEnumerable<ClienteDto>, int)> GetWithFilters(FiltroClienteDto filtro)
     {
-        var clientes = await _clienteRepository.Search(filtro.Nombre, filtro.Nit, filtro.Codigo);
+        (IEnumerable<Cliente> clientes, int total) = await _clienteRepository.GetWithFilters(filtro);
         var clientesDto = clientes.Select(c => MapToDto(c)).ToList();
-        return (clientesDto, clientesDto.Count);
+        return (clientesDto, total);
     }
 
     public async Task<ClienteDto?> GetById(int id)
@@ -166,7 +167,7 @@ public class ClienteService : IClienteService
 
     public async Task<IEnumerable<ClienteDto>> GetMultipleByCodigoNitOrNombre(string termino)
     {
-        var clientes = await _clienteRepository.Search(termino, termino, termino);
+        var clientes = await _clienteRepository.GetMultipleByCodigoNitOrNombre(termino);
         return clientes.Select(c => MapToDto(c)).ToList();
     }
 
@@ -205,7 +206,14 @@ public class ClienteService : IClienteService
 
     public async Task<bool> ExisteNit(string nit)
     {
+        nit = nit?.Trim().ToUpper();
         return await _clienteRepository.ExisteNit(nit);
+    }
+
+    public async Task<bool> ExisteNit(string nit, int? idExcluir)
+    {
+        nit = nit?.Trim().ToUpper();
+        return await _clienteRepository.ExisteNit(nit, idExcluir);
     }
 
     // Helper privado

@@ -67,7 +67,8 @@ public class ProductoService : IProductoService
             CategoriaId = dto.CategoriaId,
             Precio = dto.Precio,
             StockMinimo = dto.StockMinimo,
-            ProveedorId = dto.ProveedorId
+            ProveedorId = dto.ProveedorId,
+            Activo = true  // <- AGREGAR ESTA LÍNEA
         };
 
         var productoCreado = await _productoRepository.Create(producto);
@@ -170,14 +171,48 @@ public class ProductoService : IProductoService
         return await CrearProductoAsync(dto);
     }
 
-    public async Task<bool> UpdateProducto(int id, ActualizarProductoDto dto)
+    public async Task<ProductoDto> UpdateProducto(int id, ActualizarProductoDto dto)
     {
-        return await ActualizarProductoAsync(id, dto);
+        var producto = await _productoRepository.GetById(id);
+        if (producto == null)
+            throw new KeyNotFoundException($"No se encontró el producto con ID {id}");
+
+        // Validar categoría
+        var categoria = await _categoriaRepository.ObtenerPorIdAsync(dto.CategoriaId);
+        if (categoria == null)
+            throw new InvalidOperationException("La categoría especificada no existe");
+
+        // Validar proveedor si se especifica
+        if (dto.ProveedorId.HasValue)
+        {
+            var proveedor = await _proveedorRepository.GetById(dto.ProveedorId.Value);
+            if (proveedor == null)
+                throw new InvalidOperationException("El proveedor especificado no existe");
+        }
+
+        // Actualizar campos
+        producto.Nombre = dto.Nombre;
+        producto.CategoriaId = dto.CategoriaId;
+        producto.Precio = dto.Precio;
+        producto.StockMinimo = dto.StockMinimo;
+        producto.ProveedorId = dto.ProveedorId;
+
+        await _productoRepository.Update(producto);
+
+        // Recargar con relaciones
+        var productoActualizado = await _productoRepository.GetById(id);
+        return MapToDto(productoActualizado!);
     }
 
-    public async Task<bool> DeleteProducto(int id)
+    public async Task DeleteProducto(int id)
     {
-        return await EliminarProductoAsync(id);
+        var producto = await _productoRepository.GetById(id);
+        if (producto == null)
+            throw new KeyNotFoundException($"No se encontró el producto con ID {id}");
+
+        // Soft delete - solo desactivar
+        producto.Activo = false;
+        await _productoRepository.Update(producto);
     }
 
     public async Task<bool> ExisteCodigo(string codigo, int? idExcluir = null)
@@ -204,7 +239,8 @@ public class ProductoService : IProductoService
             Precio = p.Precio,
             StockMinimo = p.StockMinimo,
             ProveedorId = p.ProveedorId,
-            ProveedorNombre = p.Proveedor?.Nombre
+            ProveedorNombre = p.Proveedor?.Nombre,
+            Activo = p.Activo
         };
     }
 }

@@ -4,6 +4,7 @@ using ProyectoGraduación.Data;
 using ProyectoGraduación.IRepositories;
 using ProyectoGraduación.DTOs;
 using Microsoft.Extensions.Logging;
+using ProyectoGraduación.Repositories.IRepositories;
 
 namespace ProyectoGraduación.Repositories;
 
@@ -108,17 +109,23 @@ public class ClienteRepository : IClienteRepository
             .FirstOrDefaultAsync(c => c.Codigo == codigo);
     }
 
-    public async Task Add(Cliente cliente)
+    public async Task<Cliente> Add(Cliente cliente)
     {
         try
         {
-            cliente.Moneda = "GTQ"; 
-            cliente.Activo = true;      
+            if (string.IsNullOrWhiteSpace(cliente.Codigo))
+            {
+                cliente.Codigo = null!;
+            }
+
+            cliente.Moneda = "GTQ";
+            cliente.Activo = true;
             cliente.FechaCreacion = DateTime.UtcNow;
             cliente.FechaActualizacion = DateTime.UtcNow;
 
             _context.Clientes.Add(cliente);
             await _context.SaveChangesAsync();
+            return cliente;
         }
         catch (DbUpdateException dbEx)
         {
@@ -156,14 +163,11 @@ public class ClienteRepository : IClienteRepository
             throw;
         }
     }
-    public async Task Update(Cliente cliente)
+    public async Task<bool> Update(Cliente cliente)  // <- Devuelve bool
     {
         try
         {
-            
             cliente.FechaActualizacion = DateTime.UtcNow;
-
-           
             var entry = _context.Entry(cliente);
 
             if (entry.State == EntityState.Detached)
@@ -173,10 +177,10 @@ public class ClienteRepository : IClienteRepository
             }
 
             _logger.LogInformation("Intentando actualizar cliente ID: {Id}", cliente.Id);
-
             await _context.SaveChangesAsync();
-
             _logger.LogInformation("Cliente actualizado exitosamente ID: {Id}", cliente.Id);
+
+            return true;  // <- AGREGAR return
         }
         catch (DbUpdateException dbEx)
         {
@@ -191,23 +195,23 @@ public class ClienteRepository : IClienteRepository
         }
     }
 
-    public async Task Delete(int id)
+    // CAMBIAR Delete:
+    public async Task<bool> Delete(int id)  // <- Devuelve bool
     {
         try
         {
             var cliente = await _context.Clientes.FindAsync(id);
             if (cliente != null)
             {
-               
                 _context.Clientes.Remove(cliente);
                 await _context.SaveChangesAsync();
-
                 _logger.LogInformation("Cliente eliminado completamente ID: {Id}", id);
+                return true;  // <- AGREGAR return
             }
             else
             {
                 _logger.LogWarning("Intento de eliminar cliente que no existe ID: {Id}", id);
-                throw new Exception("Cliente no encontrado");
+                return false;  // <- AGREGAR return
             }
         }
         catch (Exception ex)
@@ -215,6 +219,16 @@ public class ClienteRepository : IClienteRepository
             _logger.LogError(ex, "Error al eliminar cliente ID: {Id}", id);
             throw;
         }
+    }
+
+    // AGREGAR sobrecarga de ExisteNit:
+    public async Task<bool> ExisteNit(string nit, int? idExcluir)
+    {
+        if (idExcluir.HasValue)
+        {
+            return await _context.Clientes.AnyAsync(c => c.Nit == nit && c.Id != idExcluir.Value);
+        }
+        return await _context.Clientes.AnyAsync(c => c.Nit == nit);
     }
 
     public async Task<bool> ExisteCodigo(string codigo)
@@ -263,4 +277,6 @@ public class ClienteRepository : IClienteRepository
         return await _context.Clientes
             .FirstOrDefaultAsync(c => c.Codigo == codigoOrNit || c.Nit == codigoOrNit);
     }
+
+    
 }

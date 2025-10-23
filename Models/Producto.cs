@@ -18,7 +18,7 @@ public class Producto
     [Required]
     [Column("codigo")]
     [MaxLength(50)]
-    public string Codigo { get; set; } = string.Empty; // Auto-generado por trigger
+    public string Codigo { get; set; } = string.Empty;
 
     [Required]
     [Column("id_categoria")]
@@ -34,6 +34,9 @@ public class Producto
 
     [Column("id_proveedor")]
     public int? ProveedorId { get; set; }
+
+    [Required, Column("activo")]
+    public bool Activo { get; set; } = true;
 
     // Navegación
     [ForeignKey("CategoriaId")]
