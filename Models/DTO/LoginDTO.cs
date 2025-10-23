@@ -39,3 +39,10 @@ public class CambiarPasswordPrimerLoginDto
     [Compare("NuevaPassword", ErrorMessage = "Las contraseñas no coinciden")]
     public string ConfirmarPassword { get; set; }
 }
+
+public class SolicitarResetPasswordDto
+{
+    [Required(ErrorMessage = "El correo es requerido")]
+    [EmailAddress(ErrorMessage = "El correo no es válido")]
+    public string Correo { get; set; }
+}

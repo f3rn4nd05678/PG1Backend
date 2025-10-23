@@ -14,11 +14,13 @@ public class AuthController : ControllerBase
 {
     private readonly IUsuarioService _usuarioService;
     private readonly IUsuarioRepository _usuarioRepository;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IUsuarioService usuarioService, IUsuarioRepository usuarioRepository)
+    public AuthController(IUsuarioService usuarioService, IUsuarioRepository usuarioRepository, ILogger<AuthController> logger)
     {
         _usuarioService = usuarioService;
         _usuarioRepository = usuarioRepository;
+        _logger = logger;
     }
 
     [HttpPost("login")]
@@ -115,6 +117,41 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             return this.ApiError(ex.Message);
+        }
+    }
+
+    [HttpPost("solicitar-reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SolicitarResetPassword([FromBody] SolicitarResetPasswordDto request)
+    {
+        try
+        {
+            _logger.LogInformation("Solicitud de reset password recibida para: {Correo}", request?.Correo);
+
+            if (request == null || string.IsNullOrWhiteSpace(request.Correo))
+            {
+                _logger.LogWarning("Solicitud inválida - correo vacío");
+                return this.ApiError("El correo es requerido");
+            }
+
+            var resultado = await _usuarioService.SolicitarResetPassword(request.Correo);
+
+            if (!resultado)
+            {
+                _logger.LogInformation("Correo no encontrado: {Correo}", request.Correo);
+                return this.ApiError("El correo ingresado no está registrado en el sistema.");
+            }
+
+            _logger.LogInformation("Reset password exitoso para: {Correo}", request.Correo);
+            return this.ApiOk<object>(
+                null,
+                "Se ha enviado un correo con instrucciones para restablecer tu contraseña."
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al procesar solicitud de reset password para {Correo}", request?.Correo);
+            return this.ApiError($"Ocurrió un error al procesar tu solicitud: {ex.Message}");
         }
     }
 }

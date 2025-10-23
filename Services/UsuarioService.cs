@@ -335,4 +335,68 @@ public class UsuarioService : IUsuarioService
 
         _logger.LogInformation("Usuario {Correo} cambió su contraseña exitosamente", usuario.Correo);
     }
+
+    public async Task<bool> SolicitarResetPassword(string correo)
+    {
+        try
+        {
+            _logger.LogInformation("Iniciando proceso de reset password para: {Correo}", correo);
+
+            var usuario = await _repository.GetByCorreo(correo);
+
+            if (usuario == null)
+            {
+                _logger.LogWarning("Usuario no encontrado: {Correo}", correo);
+                return false;
+            }
+
+            if (!usuario.Activo)
+            {
+                _logger.LogWarning("Usuario inactivo: {Correo}", correo);
+                return false;
+            }
+
+            _logger.LogInformation("Generando contraseña temporal...");
+            string passwordTemporal = _passwordGenerator.GenerarPasswordTemporal();
+
+            _logger.LogInformation("Hasheando contraseña...");
+            usuario.Password = BCrypt.Net.BCrypt.HashPassword(passwordTemporal);
+            usuario.ForzarCambioPassword = true;
+
+            // FIX: Convertir UltimoLogin a UTC si no es null
+            if (usuario.UltimoLogin.HasValue && usuario.UltimoLogin.Value.Kind == DateTimeKind.Unspecified)
+            {
+                usuario.UltimoLogin = DateTime.SpecifyKind(usuario.UltimoLogin.Value, DateTimeKind.Utc);
+            }
+
+            _logger.LogInformation("Actualizando usuario en BD...");
+            await _repository.Update(usuario);
+
+            _logger.LogInformation("Enviando correo...");
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailService.EnviarPasswordRecuperacion(
+                        usuario.Correo,
+                        usuario.Nombre,
+                        passwordTemporal
+                    );
+                    _logger.LogInformation("Correo enviado exitosamente a: {Correo}", usuario.Correo);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error al enviar correo de recuperación a {Correo}", usuario.Correo);
+                }
+            });
+
+            _logger.LogInformation("Proceso completado exitosamente para: {Correo}", correo);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error en SolicitarResetPassword para {Correo}", correo);
+            throw;
+        }
+    }
 }

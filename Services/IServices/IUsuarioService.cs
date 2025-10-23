@@ -22,4 +22,5 @@ public interface IUsuarioService
     Task ActivarDesactivar(int id, bool activo);
 
     Task CambiarPasswordPrimerLogin(int userId, string nuevaPassword);
+    Task<bool> SolicitarResetPassword(string correo);
 }
