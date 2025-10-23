@@ -1,15 +1,44 @@
-﻿namespace ProyectoGraduación.Models;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
+namespace ProyectoGraduación.Models;
+
+[Table("producto")]
 public class Producto
 {
+    [Key]
+    [Column("id_producto")]
     public int Id { get; set; }
+
+    [Required]
+    [Column("nombre")]
+    [MaxLength(100)]
     public string Nombre { get; set; } = string.Empty;
-    public string Codigo { get; set; } = string.Empty;
-    public string? Categoria { get; set; }
+
+    [Required]
+    [Column("codigo")]
+    [MaxLength(50)]
+    public string Codigo { get; set; } = string.Empty; // Auto-generado por trigger
+
+    [Required]
+    [Column("id_categoria")]
+    public int CategoriaId { get; set; }
+
+    [Required]
+    [Column("precio", TypeName = "numeric(10,2)")]
     public decimal Precio { get; set; }
+
+    [Required]
+    [Column("stock_minimo")]
     public int StockMinimo { get; set; }
+
+    [Column("id_proveedor")]
     public int? ProveedorId { get; set; }
 
-    // Relación con Proveedor
+    // Navegación
+    [ForeignKey("CategoriaId")]
+    public virtual Categoria? Categoria { get; set; }
+
+    [ForeignKey("ProveedorId")]
     public virtual Proveedor? Proveedor { get; set; }
 }

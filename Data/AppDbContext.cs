@@ -2,6 +2,7 @@
 using ProyectoGraduación.Models;
 
 namespace ProyectoGraduación.Data;
+
 public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
@@ -16,11 +17,14 @@ public class AppDbContext : DbContext
     public DbSet<Menu> Menus { get; set; }
     public DbSet<Cliente> Clientes { get; set; }
     public DbSet<Proveedor> Proveedores { get; set; }
+    public DbSet<Categoria> Categorias { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-
+        // ========================================
+        // Configuración de RolPermiso (muchos a muchos)
+        // ========================================
         modelBuilder.Entity<RolPermiso>()
             .HasKey(rp => new { rp.RolId, rp.PermisoId });
 
@@ -34,7 +38,9 @@ public class AppDbContext : DbContext
             .WithMany(p => p.RolesPermisos)
             .HasForeignKey(rp => rp.PermisoId);
 
-  
+        // ========================================
+        // Mapeo de tablas
+        // ========================================
         modelBuilder.Entity<Rol>().ToTable("rol");
         modelBuilder.Entity<Usuario>().ToTable("usuario");
         modelBuilder.Entity<Permiso>().ToTable("permiso");
@@ -42,8 +48,12 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Menu>().ToTable("menu");
         modelBuilder.Entity<Producto>().ToTable("producto");
         modelBuilder.Entity<Proveedor>().ToTable("proveedor");
+        modelBuilder.Entity<Cliente>().ToTable("cliente");
+        modelBuilder.Entity<Categoria>().ToTable("categoria");
 
-
+        // ========================================
+        // Configuración de Usuario
+        // ========================================
         modelBuilder.Entity<Usuario>()
             .Property(u => u.Id)
             .HasColumnName("id_usuario");
@@ -65,9 +75,9 @@ public class AppDbContext : DbContext
             .HasColumnName("id_rol");
 
         modelBuilder.Entity<Usuario>()
-    .Property(u => u.Activo)
-    .HasColumnName("activo")
-    .HasDefaultValue(true);
+            .Property(u => u.Activo)
+            .HasColumnName("activo")
+            .HasDefaultValue(true);
 
         modelBuilder.Entity<Usuario>()
             .Property(u => u.UltimoLogin)
@@ -79,7 +89,9 @@ public class AppDbContext : DbContext
             .HasColumnName("forzar_cambio_password")
             .HasDefaultValue(false);
 
-
+        // ========================================
+        // Configuración de Rol
+        // ========================================
         modelBuilder.Entity<Rol>()
             .Property(r => r.Id)
             .HasColumnName("id_rol");
@@ -89,12 +101,14 @@ public class AppDbContext : DbContext
             .HasColumnName("nombre");
 
         modelBuilder.Entity<Rol>()
-    .Property(r => r.Descripcion)
-    .HasColumnName("descripcion")
-    .HasMaxLength(255)
-    .IsRequired(false);
+            .Property(r => r.Descripcion)
+            .HasColumnName("descripcion")
+            .HasMaxLength(255)
+            .IsRequired(false);
 
-
+        // ========================================
+        // Configuración de Permiso
+        // ========================================
         modelBuilder.Entity<Permiso>()
             .Property(p => p.Id)
             .HasColumnName("id_permiso");
@@ -107,6 +121,9 @@ public class AppDbContext : DbContext
             .Property(p => p.Descripcion)
             .HasColumnName("descripcion");
 
+        // ========================================
+        // Configuración de RolPermiso
+        // ========================================
         modelBuilder.Entity<RolPermiso>()
             .Property(rp => rp.RolId)
             .HasColumnName("id_rol");
@@ -115,7 +132,9 @@ public class AppDbContext : DbContext
             .Property(rp => rp.PermisoId)
             .HasColumnName("id_permiso");
 
-
+        // ========================================
+        // Configuración de Menu
+        // ========================================
         modelBuilder.Entity<Menu>()
             .Property(m => m.Id)
             .HasColumnName("id_menu");
@@ -150,8 +169,50 @@ public class AppDbContext : DbContext
             .Property(m => m.PermisoId)
             .HasColumnName("id_permiso");
 
+        // ========================================
+        // Configuración de Categoria (NUEVA)
+        // ========================================
+        modelBuilder.Entity<Categoria>()
+            .Property(c => c.Id)
+            .HasColumnName("id_categoria");
 
-        // Configuración de Producto
+        modelBuilder.Entity<Categoria>()
+            .Property(c => c.Nombre)
+            .HasColumnName("nombre")
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<Categoria>()
+            .Property(c => c.CodigoPrefijo)
+            .HasColumnName("codigo_prefijo")
+            .IsRequired()
+            .HasMaxLength(10);
+
+        modelBuilder.Entity<Categoria>()
+            .Property(c => c.Descripcion)
+            .HasColumnName("descripcion");
+
+        modelBuilder.Entity<Categoria>()
+            .Property(c => c.Activo)
+            .HasColumnName("activo")
+            .HasDefaultValue(true);
+
+        modelBuilder.Entity<Categoria>()
+            .Property(c => c.FechaCreacion)
+            .HasColumnName("fecha_creacion")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+        modelBuilder.Entity<Categoria>()
+            .HasIndex(c => c.Nombre)
+            .IsUnique();
+
+        modelBuilder.Entity<Categoria>()
+            .HasIndex(c => c.CodigoPrefijo)
+            .IsUnique();
+
+        // ========================================
+        // Configuración de Producto (ACTUALIZADA)
+        // ========================================
         modelBuilder.Entity<Producto>()
             .Property(p => p.Id)
             .HasColumnName("id_producto");
@@ -169,9 +230,9 @@ public class AppDbContext : DbContext
             .HasMaxLength(50);
 
         modelBuilder.Entity<Producto>()
-            .Property(p => p.Categoria)
-            .HasColumnName("categoria")
-            .HasMaxLength(50);
+            .Property(p => p.CategoriaId)
+            .HasColumnName("id_categoria")
+            .IsRequired();
 
         modelBuilder.Entity<Producto>()
             .Property(p => p.Precio)
@@ -186,6 +247,17 @@ public class AppDbContext : DbContext
             .Property(p => p.ProveedorId)
             .HasColumnName("id_proveedor");
 
+        modelBuilder.Entity<Producto>()
+            .HasIndex(p => p.Codigo)
+            .IsUnique();
+
+        // Relación Producto -> Categoria
+        modelBuilder.Entity<Producto>()
+            .HasOne(p => p.Categoria)
+            .WithMany(c => c.Productos)
+            .HasForeignKey(p => p.CategoriaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Relación Producto -> Proveedor
         modelBuilder.Entity<Producto>()
             .HasOne(p => p.Proveedor)
@@ -193,9 +265,9 @@ public class AppDbContext : DbContext
             .HasForeignKey(p => p.ProveedorId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<Cliente>().ToTable("cliente");
-
-
+        // ========================================
+        // Configuración de Cliente
+        // ========================================
         modelBuilder.Entity<Cliente>()
             .Property(c => c.Id)
             .HasColumnName("id_cliente");
@@ -332,9 +404,19 @@ public class AppDbContext : DbContext
             .HasColumnName("actualizado_por");
 
         modelBuilder.Entity<Cliente>()
-        .HasQueryFilter(c => c.Activo);
+            .HasIndex(c => c.Codigo)
+            .IsUnique();
 
+        modelBuilder.Entity<Cliente>()
+            .HasIndex(c => c.Nit)
+            .IsUnique();
+
+        modelBuilder.Entity<Cliente>()
+            .HasQueryFilter(c => c.Activo);
+
+        // ========================================
         // Configuración de Proveedor
+        // ========================================
         modelBuilder.Entity<Proveedor>()
             .Property(p => p.Id)
             .HasColumnName("id_proveedor");
@@ -379,7 +461,6 @@ public class AppDbContext : DbContext
     {
         if (!optionsBuilder.IsConfigured)
         {
-           
             optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=sistema_inventario;Username=postgres;Password=1234");
         }
     }

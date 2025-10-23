@@ -1,13 +1,14 @@
 ﻿using ProyectoGraduación.Models;
 
-namespace ProyectoGraduación.IRepositories;
+namespace ProyectoGraduación.Repositories.IRepositories;
 
 public interface IProductoRepository
 {
+    // Métodos principales
     Task<IEnumerable<Producto>> GetAll();
-    Task<(IEnumerable<Producto> productos, int total)> GetWithFilters(
+    Task<(IEnumerable<Producto>, int)> GetWithFilters(
         string? terminoBusqueda,
-        string? categoria,
+        int? categoriaId,
         int? proveedorId,
         decimal? precioMinimo,
         decimal? precioMaximo,
@@ -17,9 +18,8 @@ public interface IProductoRepository
     Task<Producto?> GetByCodigo(string codigo);
     Task<IEnumerable<Producto>> GetByProveedor(int proveedorId);
     Task<IEnumerable<Producto>> SearchByNombreOrCodigo(string termino);
-    Task<IEnumerable<string>> GetCategorias();
-    Task Add(Producto producto);
-    Task Update(Producto producto);
-    Task Delete(int id);
-    Task<bool> ExisteCodigo(string codigo, int? excludeId = null);
+    Task<Producto> Create(Producto producto);
+    Task<bool> Update(Producto producto);
+    Task<bool> Delete(int id);
+    Task<bool> ExisteCodigo(string codigo, int? idExcluir = null);
 }

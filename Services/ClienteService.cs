@@ -1,288 +1,251 @@
-﻿using ProyectoGraduación.Models;
-using ProyectoGraduación.DTOs;
-using ProyectoGraduación.IRepositories;
-using ProyectoGraduación.IServices;
-using System.Linq;
-using Microsoft.Extensions.Logging;
+﻿using ProyectoGraduación.DTOs;
+using ProyectoGraduación.Models;
+using ProyectoGraduación.Repositories.IRepositories;
+using ProyectoGraduación.Services.IServices;
 
 namespace ProyectoGraduación.Services;
 
 public class ClienteService : IClienteService
 {
-    private readonly IClienteRepository _repository;
-    private readonly ILogger<ClienteService> _logger;
+    private readonly IClienteRepository _clienteRepository;
 
-    public ClienteService(IClienteRepository repository, ILogger<ClienteService> logger)
+    public ClienteService(IClienteRepository clienteRepository)
     {
-        _repository = repository;
-        _logger = logger;
+        _clienteRepository = clienteRepository;
     }
 
+    // Métodos principales
+    public async Task<IEnumerable<ClienteDto>> ObtenerTodosAsync()
+    {
+        var clientes = await _clienteRepository.GetAll();
+        return clientes.Select(c => MapToDto(c)).ToList();
+    }
+
+    public async Task<ClienteDto?> ObtenerPorIdAsync(int id)
+    {
+        var cliente = await _clienteRepository.GetById(id);
+        return cliente != null ? MapToDto(cliente) : null;
+    }
+
+    public async Task<ClienteDto?> ObtenerPorNitAsync(string nit)
+    {
+        var cliente = await _clienteRepository.GetByNit(nit);
+        return cliente != null ? MapToDto(cliente) : null;
+    }
+
+    public async Task<ClienteDto> CrearAsync(CrearClienteDto dto)
+    {
+        // Validar NIT único si se proporciona
+        if (!string.IsNullOrEmpty(dto.Nit))
+        {
+            var existeNit = await _clienteRepository.ExisteNit(dto.Nit);
+            if (existeNit)
+                throw new InvalidOperationException("Ya existe un cliente con ese NIT");
+        }
+
+        var cliente = new Cliente
+        {
+            // Codigo se genera automáticamente por trigger
+            TipoCliente = dto.TipoCliente,
+            Nombre = dto.Nombre,
+            NombreExtranjero = dto.NombreExtranjero,
+            Grupo = dto.Grupo,
+            Moneda = dto.Moneda,
+            Nit = dto.Nit,
+            Direccion = dto.Direccion,
+            Telefono1 = dto.Telefono1,
+            Telefono2 = dto.Telefono2,
+            TelefonoMovil = dto.TelefonoMovil,
+            Fax = dto.Fax,
+            CorreoElectronico = dto.CorreoElectronico,
+            SitioWeb = dto.SitioWeb,
+            Posicion = dto.Posicion,
+            Titulo = dto.Titulo,
+            SegundoNombre = dto.SegundoNombre,
+            Apellido = dto.Apellido,
+            LimiteCredito = dto.LimiteCredito,
+            DiasCredito = dto.DiasCredito,
+            DescuentoPorcentaje = dto.DescuentoPorcentaje,
+            BloquearMarketing = false,
+            Observaciones1 = dto.Observaciones1,
+            Observaciones2 = dto.Observaciones2,
+            ClaveAcceso = dto.ClaveAcceso,
+            CiudadNacimiento = dto.CiudadNacimiento,
+            Activo = true,
+            FechaCreacion = DateTime.UtcNow,
+            FechaActualizacion = DateTime.UtcNow
+        };
+
+        var clienteCreado = await _clienteRepository.Create(cliente);
+        return MapToDto(clienteCreado);
+    }
+
+    public async Task<bool> ActualizarAsync(int id, ActualizarClienteDto dto)
+    {
+        var cliente = await _clienteRepository.GetById(id);
+        if (cliente == null)
+            return false;
+
+        // Validar NIT único
+        if (!string.IsNullOrEmpty(dto.Nit))
+        {
+            var existeNit = await _clienteRepository.ExisteNit(dto.Nit, id);
+            if (existeNit)
+                throw new InvalidOperationException("Ya existe otro cliente con ese NIT");
+        }
+
+        // NO permitir cambiar el código
+        cliente.TipoCliente = dto.TipoCliente;
+        cliente.Nombre = dto.Nombre;
+        cliente.NombreExtranjero = dto.NombreExtranjero;
+        cliente.Grupo = dto.Grupo;
+        cliente.Moneda = dto.Moneda;
+        cliente.Nit = dto.Nit;
+        cliente.Direccion = dto.Direccion;
+        cliente.Telefono1 = dto.Telefono1;
+        cliente.Telefono2 = dto.Telefono2;
+        cliente.TelefonoMovil = dto.TelefonoMovil;
+        cliente.Fax = dto.Fax;
+        cliente.CorreoElectronico = dto.CorreoElectronico;
+        cliente.SitioWeb = dto.SitioWeb;
+        cliente.Posicion = dto.Posicion;
+        cliente.Titulo = dto.Titulo;
+        cliente.SegundoNombre = dto.SegundoNombre;
+        cliente.Apellido = dto.Apellido;
+        cliente.LimiteCredito = dto.LimiteCredito;
+        cliente.DiasCredito = dto.DiasCredito;
+        cliente.DescuentoPorcentaje = dto.DescuentoPorcentaje;
+        cliente.Activo = dto.Activo;
+        cliente.BloquearMarketing = dto.BloquearMarketing;
+        cliente.Observaciones1 = dto.Observaciones1;
+        cliente.Observaciones2 = dto.Observaciones2;
+        cliente.ClaveAcceso = dto.ClaveAcceso;
+        cliente.CiudadNacimiento = dto.CiudadNacimiento;
+        cliente.FechaActualizacion = DateTime.UtcNow;
+
+        return await _clienteRepository.Update(cliente);
+    }
+
+    public async Task<bool> EliminarAsync(int id)
+    {
+        return await _clienteRepository.Delete(id);
+    }
+
+    public async Task<IEnumerable<ClienteDto>> BuscarAsync(string? nombre, string? nit, string? codigo)
+    {
+        var clientes = await _clienteRepository.Search(nombre, nit, codigo);
+        return clientes.Select(c => MapToDto(c)).ToList();
+    }
+
+    // Métodos de compatibilidad (alias)
     public async Task<IEnumerable<ClienteDto>> GetAll()
     {
-        var clientes = await _repository.GetAll();
-        return clientes.Select(MapToDto);
+        return await ObtenerTodosAsync();
     }
 
-    public async Task<(IEnumerable<ClienteDto> clientes, int total)> GetWithFilters(FiltroClienteDto filtro)
+    public async Task<(IEnumerable<ClienteDto>, int)> GetWithFilters(FiltroClienteDto filtro)
     {
-        var (clientes, total) = await _repository.GetWithFilters(filtro);
-        return (clientes.Select(MapToDto), total);
+        var clientes = await _clienteRepository.Search(filtro.Nombre, filtro.Nit, filtro.Codigo);
+        var clientesDto = clientes.Select(c => MapToDto(c)).ToList();
+        return (clientesDto, clientesDto.Count);
     }
 
     public async Task<ClienteDto?> GetById(int id)
     {
-        var cliente = await _repository.GetById(id);
-        return cliente != null ? MapToDto(cliente) : null;
-    }
-
-    public async Task<IEnumerable<ClienteDto>> GetMultipleByCodigoNitOrNombre(string terminoBusqueda)
-    {
-        var clientes = await _repository.GetMultipleByCodigoNitOrNombre(terminoBusqueda);
-        return clientes.Select(MapToDto);
-    }
-
-    public async Task<ClienteDto> CreateCliente(CrearClienteDto crearClienteDto, int usuarioId)
-    {
-        try
-        {
-           
-            if (!string.IsNullOrEmpty(crearClienteDto.Nit) && await _repository.ExisteNit(crearClienteDto.Nit))
-            {
-                throw new Exception("Ya existe un cliente con ese NIT");
-            }
-
-            
-            var codigo = string.IsNullOrEmpty(crearClienteDto.Codigo)
-                ? await _repository.GenerateNextCodigo()
-                : crearClienteDto.Codigo;
-
-            if (await _repository.ExisteCodigo(codigo))
-            {
-                throw new Exception("Ya existe un cliente con ese código");
-            }
-
-            var cliente = new Cliente
-            {
-                Codigo = codigo,
-                TipoCliente = crearClienteDto.TipoCliente,
-                Nombre = crearClienteDto.Nombre,
-                NombreExtranjero = crearClienteDto.NombreExtranjero,
-                Grupo = crearClienteDto.Grupo,
-                Moneda = "GTQ",
-                Nit = crearClienteDto.Nit,
-                Direccion = crearClienteDto.Direccion,
-                Telefono1 = crearClienteDto.Telefono1,
-                Telefono2 = crearClienteDto.Telefono2,
-                TelefonoMovil = crearClienteDto.TelefonoMovil,
-                Fax = crearClienteDto.Fax,
-                CorreoElectronico = crearClienteDto.CorreoElectronico,
-                SitioWeb = crearClienteDto.SitioWeb,
-                Posicion = crearClienteDto.Posicion,
-                Titulo = crearClienteDto.Titulo,
-                SegundoNombre = crearClienteDto.SegundoNombre,
-                Apellido = crearClienteDto.Apellido,
-                LimiteCredito = crearClienteDto.LimiteCredito,
-                DiasCredito = crearClienteDto.DiasCredito,
-                DescuentoPorcentaje = crearClienteDto.DescuentoPorcentaje,
-                BloquearMarketing = crearClienteDto.BloquearMarketing,
-                Observaciones1 = crearClienteDto.Observaciones1,
-                Observaciones2 = crearClienteDto.Observaciones2,
-                ClaveAcceso = crearClienteDto.ClaveAcceso,
-                CiudadNacimiento = crearClienteDto.CiudadNacimiento,
-                CreadoPor = usuarioId,
-                ActualizadoPor = usuarioId,
-                Activo = true
-            };
-
-            await _repository.Add(cliente);
-
-            var clienteCreado = await _repository.GetById(cliente.Id);
-            return MapToDto(clienteCreado!);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al crear cliente: {Message}", ex.Message);
-            throw;
-        }
-    }
-
-    public async Task<ClienteDto> UpdateCliente(int id, ActualizarClienteDto actualizarClienteDto, int usuarioId)
-    {
-        try
-        {
-            var clienteExistente = await _repository.GetById(id);
-            if (clienteExistente == null)
-            {
-                throw new Exception("Cliente no encontrado");
-            }
-
-            _logger.LogInformation("Actualizando cliente ID: {Id}, Usuario: {UserId}", id, usuarioId);
-
-            if (!string.IsNullOrEmpty(actualizarClienteDto.Nit) &&
-                actualizarClienteDto.Nit != clienteExistente.Nit)
-            {
-                var existeNit = await _repository.ExisteNit(actualizarClienteDto.Nit);
-                if (existeNit)
-                {
-                    throw new Exception("Ya existe otro cliente con ese NIT");
-                }
-            }
-
-            
-            if (!string.IsNullOrEmpty(actualizarClienteDto.Codigo) &&
-                actualizarClienteDto.Codigo != clienteExistente.Codigo)
-            {
-                var existeCodigo = await _repository.ExisteCodigo(actualizarClienteDto.Codigo);
-                if (existeCodigo)
-                {
-                    throw new Exception("Ya existe otro cliente con ese código");
-                }
-            }
-
-           
-            clienteExistente.Codigo = !string.IsNullOrEmpty(actualizarClienteDto.Codigo)
-                ? actualizarClienteDto.Codigo
-                : clienteExistente.Codigo;
-
-            clienteExistente.TipoCliente = actualizarClienteDto.TipoCliente ?? clienteExistente.TipoCliente;
-            clienteExistente.Nombre = actualizarClienteDto.Nombre ?? clienteExistente.Nombre;
-            clienteExistente.NombreExtranjero = actualizarClienteDto.NombreExtranjero;
-            clienteExistente.Grupo = actualizarClienteDto.Grupo;
-            clienteExistente.Moneda = "GTQ";
-            clienteExistente.Nit = actualizarClienteDto.Nit;
-            clienteExistente.Direccion = actualizarClienteDto.Direccion;
-            clienteExistente.Telefono1 = actualizarClienteDto.Telefono1;
-            clienteExistente.Telefono2 = actualizarClienteDto.Telefono2;
-            clienteExistente.TelefonoMovil = actualizarClienteDto.TelefonoMovil;
-            clienteExistente.Fax = actualizarClienteDto.Fax;
-            clienteExistente.CorreoElectronico = actualizarClienteDto.CorreoElectronico;
-            clienteExistente.SitioWeb = actualizarClienteDto.SitioWeb;
-            clienteExistente.Posicion = actualizarClienteDto.Posicion;
-            clienteExistente.Titulo = actualizarClienteDto.Titulo;
-            clienteExistente.SegundoNombre = actualizarClienteDto.SegundoNombre;
-            clienteExistente.Apellido = actualizarClienteDto.Apellido;
-            clienteExistente.LimiteCredito = actualizarClienteDto.LimiteCredito;
-            clienteExistente.DiasCredito = actualizarClienteDto.DiasCredito;
-            clienteExistente.DescuentoPorcentaje = actualizarClienteDto.DescuentoPorcentaje;
-            clienteExistente.BloquearMarketing = actualizarClienteDto.BloquearMarketing;
-            clienteExistente.Observaciones1 = actualizarClienteDto.Observaciones1;
-            clienteExistente.Observaciones2 = actualizarClienteDto.Observaciones2;
-            clienteExistente.ClaveAcceso = actualizarClienteDto.ClaveAcceso;
-            clienteExistente.CiudadNacimiento = actualizarClienteDto.CiudadNacimiento;
-            clienteExistente.Activo = actualizarClienteDto.Activo;
-            clienteExistente.ActualizadoPor = usuarioId;
-            
-
-            await _repository.Update(clienteExistente);
-
-            _logger.LogInformation("Cliente actualizado exitosamente ID: {Id}", id);
-            return MapToDto(clienteExistente);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al actualizar cliente ID: {Id}. Error: {Message}", id, ex.Message);
-
-           
-            if (ex.Message.Contains("Ya existe"))
-            {
-                throw;
-            }
-
-            
-            throw new Exception($"Error al actualizar el cliente: {ex.Message}", ex);
-        }
-    }
-    public async Task DisableCliente(int id, int usuarioId)
-    {
-        var cliente = await _repository.GetById(id) ?? throw new Exception("Cliente no encontrado");
-        await _repository.Disable(id, usuarioId);
-        _logger.LogInformation("Cliente deshabilitado por usuario {UserId}: Cliente ID {Id}", usuarioId, id);
-    }
-    public async Task DeleteCliente(int id, int usuarioId)
-    {
-        try
-        {
-            var cliente = await _repository.GetById(id);
-            if (cliente == null)
-            {
-                throw new Exception("Cliente no encontrado");
-            }
-
-           
-            await _repository.Delete(id);
-
-            _logger.LogInformation("Cliente eliminado por usuario {UserId}: Cliente ID {Id}", usuarioId, id);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al eliminar cliente ID: {Id}", id);
-            throw;
-        }
-    }
-
-    public async Task<bool> ExisteCodigo(string codigo)
-    {
-        return await _repository.ExisteCodigo(codigo);
-    }
-
-    public async Task<bool> ExisteNit(string nit)
-    {
-        return await _repository.ExisteNit(nit);
-    }
-
-    private ClienteDto MapToDto(Cliente cliente)
-    {
-        return new ClienteDto
-        {
-            Id = cliente.Id,
-            Codigo = cliente.Codigo,
-            TipoCliente = cliente.TipoCliente,
-            Nombre = cliente.Nombre,
-            NombreExtranjero = cliente.NombreExtranjero,
-            Grupo = cliente.Grupo,
-            Moneda = cliente.Moneda,
-            Nit = cliente.Nit,
-            Direccion = cliente.Direccion,
-
-            
-            Telefono1 = cliente.Telefono1,
-            Telefono2 = cliente.Telefono2,
-            TelefonoMovil = cliente.TelefonoMovil,
-            Fax = cliente.Fax,
-            CorreoElectronico = cliente.CorreoElectronico,
-            SitioWeb = cliente.SitioWeb,
-
-            Posicion = cliente.Posicion,
-            Titulo = cliente.Titulo,
-            SegundoNombre = cliente.SegundoNombre,
-            Apellido = cliente.Apellido,
-
-         
-            SaldoCuenta = cliente.SaldoCuenta,
-            LimiteCredito = cliente.LimiteCredito,
-            DiasCredito = cliente.DiasCredito,
-            DescuentoPorcentaje = cliente.DescuentoPorcentaje,
-
-         
-            Activo = cliente.Activo,
-            BloquearMarketing = cliente.BloquearMarketing,
-            Observaciones1 = cliente.Observaciones1,
-            Observaciones2 = cliente.Observaciones2,
-            ClaveAcceso = cliente.ClaveAcceso,
-            CiudadNacimiento = cliente.CiudadNacimiento,
-
-           
-            FechaCreacion = cliente.FechaCreacion,
-            FechaActualizacion = cliente.FechaActualizacion,
-            CreadoPor = cliente.CreadoPor,
-            ActualizadoPor = cliente.ActualizadoPor
-        };
+        return await ObtenerPorIdAsync(id);
     }
 
     public async Task<ClienteDto?> GetByCodigoOrNit(string codigoOrNit)
     {
-        var cliente = await _repository.GetByCodigoOrNit(codigoOrNit);
+        var cliente = await _clienteRepository.GetByCodigo(codigoOrNit);
+        if (cliente == null)
+            cliente = await _clienteRepository.GetByNit(codigoOrNit);
+
         return cliente != null ? MapToDto(cliente) : null;
+    }
+
+    public async Task<IEnumerable<ClienteDto>> GetMultipleByCodigoNitOrNombre(string termino)
+    {
+        var clientes = await _clienteRepository.Search(termino, termino, termino);
+        return clientes.Select(c => MapToDto(c)).ToList();
+    }
+
+    public async Task<ClienteDto> CreateCliente(CrearClienteDto dto, int usuarioId)
+    {
+        return await CrearAsync(dto);
+    }
+
+    public async Task<bool> UpdateCliente(int id, ActualizarClienteDto dto, int usuarioId)
+    {
+        return await ActualizarAsync(id, dto);
+    }
+
+    public async Task<bool> DisableCliente(int id, int usuarioId)
+    {
+        var cliente = await _clienteRepository.GetById(id);
+        if (cliente == null)
+            return false;
+
+        cliente.Activo = false;
+        cliente.ActualizadoPor = usuarioId;
+        cliente.FechaActualizacion = DateTime.UtcNow;
+
+        return await _clienteRepository.Update(cliente);
+    }
+
+    public async Task<bool> DeleteCliente(int id, int usuarioId)
+    {
+        return await EliminarAsync(id);
+    }
+
+    public async Task<bool> ExisteCodigo(string codigo)
+    {
+        return await _clienteRepository.ExisteCodigo(codigo);
+    }
+
+    public async Task<bool> ExisteNit(string nit)
+    {
+        return await _clienteRepository.ExisteNit(nit);
+    }
+
+    // Helper privado
+    private ClienteDto MapToDto(Cliente c)
+    {
+        return new ClienteDto
+        {
+            Id = c.Id,
+            Codigo = c.Codigo,
+            TipoCliente = c.TipoCliente,
+            Nombre = c.Nombre,
+            NombreExtranjero = c.NombreExtranjero,
+            Grupo = c.Grupo,
+            Moneda = c.Moneda,
+            Nit = c.Nit,
+            Direccion = c.Direccion,
+            Telefono1 = c.Telefono1,
+            Telefono2 = c.Telefono2,
+            TelefonoMovil = c.TelefonoMovil,
+            Fax = c.Fax,
+            CorreoElectronico = c.CorreoElectronico,
+            SitioWeb = c.SitioWeb,
+            Posicion = c.Posicion,
+            Titulo = c.Titulo,
+            SegundoNombre = c.SegundoNombre,
+            Apellido = c.Apellido,
+            SaldoCuenta = c.SaldoCuenta,
+            LimiteCredito = c.LimiteCredito,
+            DiasCredito = c.DiasCredito,
+            DescuentoPorcentaje = c.DescuentoPorcentaje,
+            Activo = c.Activo,
+            BloquearMarketing = c.BloquearMarketing,
+            Observaciones1 = c.Observaciones1,
+            Observaciones2 = c.Observaciones2,
+            ClaveAcceso = c.ClaveAcceso,
+            CiudadNacimiento = c.CiudadNacimiento,
+            FechaCreacion = c.FechaCreacion,
+            FechaActualizacion = c.FechaActualizacion,
+            CreadoPor = c.CreadoPor,
+            ActualizadoPor = c.ActualizadoPor
+        };
     }
 }

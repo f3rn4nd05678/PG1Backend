@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using ProyectoGraduación.Models;
 using ProyectoGraduación.Data;
-using ProyectoGraduación.IRepositories;
+using ProyectoGraduación.Models;
+using ProyectoGraduación.Repositories.IRepositories;
 
 namespace ProyectoGraduación.Repositories;
 
@@ -17,14 +17,15 @@ public class ProductoRepository : IProductoRepository
     public async Task<IEnumerable<Producto>> GetAll()
     {
         return await _context.Productos
+            .Include(p => p.Categoria)
             .Include(p => p.Proveedor)
             .OrderBy(p => p.Nombre)
             .ToListAsync();
     }
 
-    public async Task<(IEnumerable<Producto> productos, int total)> GetWithFilters(
+    public async Task<(IEnumerable<Producto>, int)> GetWithFilters(
         string? terminoBusqueda,
-        string? categoria,
+        int? categoriaId,
         int? proveedorId,
         decimal? precioMinimo,
         decimal? precioMaximo,
@@ -32,42 +33,40 @@ public class ProductoRepository : IProductoRepository
         int tamanoPagina)
     {
         var query = _context.Productos
+            .Include(p => p.Categoria)
             .Include(p => p.Proveedor)
             .AsQueryable();
 
-        // Aplicar filtros
-        if (!string.IsNullOrWhiteSpace(terminoBusqueda))
+        // Filtros
+        if (!string.IsNullOrEmpty(terminoBusqueda))
         {
-            terminoBusqueda = terminoBusqueda.ToLower();
             query = query.Where(p =>
-                p.Nombre.ToLower().Contains(terminoBusqueda) ||
-                p.Codigo.ToLower().Contains(terminoBusqueda));
+                p.Nombre.Contains(terminoBusqueda) ||
+                p.Codigo.Contains(terminoBusqueda));
         }
 
-        if (!string.IsNullOrWhiteSpace(categoria))
+        if (categoriaId.HasValue)
         {
-            query = query.Where(p => p.Categoria == categoria);
+            query = query.Where(p => p.CategoriaId == categoriaId.Value);
         }
 
         if (proveedorId.HasValue)
         {
-            query = query.Where(p => p.ProveedorId == proveedorId);
+            query = query.Where(p => p.ProveedorId == proveedorId.Value);
         }
 
         if (precioMinimo.HasValue)
         {
-            query = query.Where(p => p.Precio >= precioMinimo);
+            query = query.Where(p => p.Precio >= precioMinimo.Value);
         }
 
         if (precioMaximo.HasValue)
         {
-            query = query.Where(p => p.Precio <= precioMaximo);
+            query = query.Where(p => p.Precio <= precioMaximo.Value);
         }
 
-        // Contar total antes de paginar
         var total = await query.CountAsync();
 
-        // Aplicar paginación
         var productos = await query
             .OrderBy(p => p.Nombre)
             .Skip((numeroPagina - 1) * tamanoPagina)
@@ -80,6 +79,7 @@ public class ProductoRepository : IProductoRepository
     public async Task<Producto?> GetById(int id)
     {
         return await _context.Productos
+            .Include(p => p.Categoria)
             .Include(p => p.Proveedor)
             .FirstOrDefaultAsync(p => p.Id == id);
     }
@@ -87,6 +87,7 @@ public class ProductoRepository : IProductoRepository
     public async Task<Producto?> GetByCodigo(string codigo)
     {
         return await _context.Productos
+            .Include(p => p.Categoria)
             .Include(p => p.Proveedor)
             .FirstOrDefaultAsync(p => p.Codigo == codigo);
     }
@@ -94,6 +95,7 @@ public class ProductoRepository : IProductoRepository
     public async Task<IEnumerable<Producto>> GetByProveedor(int proveedorId)
     {
         return await _context.Productos
+            .Include(p => p.Categoria)
             .Include(p => p.Proveedor)
             .Where(p => p.ProveedorId == proveedorId)
             .OrderBy(p => p.Nombre)
@@ -102,58 +104,48 @@ public class ProductoRepository : IProductoRepository
 
     public async Task<IEnumerable<Producto>> SearchByNombreOrCodigo(string termino)
     {
-        termino = termino.ToLower();
         return await _context.Productos
+            .Include(p => p.Categoria)
             .Include(p => p.Proveedor)
-            .Where(p =>
-                p.Nombre.ToLower().Contains(termino) ||
-                p.Codigo.ToLower().Contains(termino))
+            .Where(p => p.Nombre.Contains(termino) || p.Codigo.Contains(termino))
             .OrderBy(p => p.Nombre)
-            .Take(20)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<string>> GetCategorias()
-    {
-        return await _context.Productos
-            .Where(p => !string.IsNullOrEmpty(p.Categoria))
-            .Select(p => p.Categoria!)
-            .Distinct()
-            .OrderBy(c => c)
-            .ToListAsync();
-    }
-
-    public async Task Add(Producto producto)
+    public async Task<Producto> Create(Producto producto)
     {
         _context.Productos.Add(producto);
         await _context.SaveChangesAsync();
+
+        // Recargar el producto con sus relaciones
+        await _context.Entry(producto).Reference(p => p.Categoria).LoadAsync();
+        if (producto.ProveedorId.HasValue)
+        {
+            await _context.Entry(producto).Reference(p => p.Proveedor).LoadAsync();
+        }
+
+        return producto;
     }
 
-    public async Task Update(Producto producto)
+    public async Task<bool> Update(Producto producto)
     {
         _context.Productos.Update(producto);
-        await _context.SaveChangesAsync();
+        return await _context.SaveChangesAsync() > 0;
     }
 
-    public async Task Delete(int id)
+    public async Task<bool> Delete(int id)
     {
-        var producto = await _context.Productos.FindAsync(id);
-        if (producto != null)
-        {
-            _context.Productos.Remove(producto);
-            await _context.SaveChangesAsync();
-        }
+        var producto = await GetById(id);
+        if (producto == null)
+            return false;
+
+        _context.Productos.Remove(producto);
+        return await _context.SaveChangesAsync() > 0;
     }
 
-    public async Task<bool> ExisteCodigo(string codigo, int? excludeId = null)
+    public async Task<bool> ExisteCodigo(string codigo, int? idExcluir = null)
     {
-        var query = _context.Productos.Where(p => p.Codigo == codigo);
-
-        if (excludeId.HasValue)
-        {
-            query = query.Where(p => p.Id != excludeId.Value);
-        }
-
-        return await query.AnyAsync();
+        return await _context.Productos
+            .AnyAsync(p => p.Codigo == codigo && (idExcluir == null || p.Id != idExcluir));
     }
 }

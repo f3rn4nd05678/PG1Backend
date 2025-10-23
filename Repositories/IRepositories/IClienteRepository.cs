@@ -1,22 +1,17 @@
 ﻿using ProyectoGraduación.Models;
-using ProyectoGraduación.DTOs;
 
-namespace ProyectoGraduación.IRepositories;
+namespace ProyectoGraduación.Repositories.IRepositories;
 
 public interface IClienteRepository
 {
     Task<IEnumerable<Cliente>> GetAll();
-    Task<(IEnumerable<Cliente> clientes, int total)> GetWithFilters(FiltroClienteDto filtro);
     Task<Cliente?> GetById(int id);
-    Task<Cliente?> GetByCodigoOrNit(string codigoOrNit);
-    Task<IEnumerable<Cliente>> GetMultipleByCodigoNitOrNombre(string terminoBusqueda);
     Task<Cliente?> GetByNit(string nit);
     Task<Cliente?> GetByCodigo(string codigo);
-    Task Add(Cliente cliente);
-    Task Update(Cliente cliente);
-    Task Disable(int id, int usuarioId);
-    Task Delete(int id);
-    Task<bool> ExisteCodigo(string codigo);
-    Task<bool> ExisteNit(string nit);
-    Task<string> GenerateNextCodigo();
+    Task<Cliente> Create(Cliente cliente);
+    Task<bool> Update(Cliente cliente);
+    Task<bool> Delete(int id);
+    Task<IEnumerable<Cliente>> Search(string? nombre, string? nit, string? codigo);
+    Task<bool> ExisteNit(string nit, int? idExcluir = null);
+    Task<bool> ExisteCodigo(string codigo, int? idExcluir = null);
 }
