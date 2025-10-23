@@ -18,6 +18,9 @@ public class AppDbContext : DbContext
     public DbSet<Cliente> Clientes { get; set; }
     public DbSet<Proveedor> Proveedores { get; set; }
     public DbSet<Categoria> Categorias { get; set; }
+    public DbSet<Bodega> Bodegas { get; set; }
+    public DbSet<Stock> Stocks { get; set; }
+    public DbSet<Bitacora> Bitacoras { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -454,6 +457,37 @@ public class AppDbContext : DbContext
             .Property(p => p.Activo)
             .HasColumnName("activo")
             .HasDefaultValue(true);
+
+        modelBuilder.Entity<Bodega>(entity =>
+        {
+            entity.HasIndex(b => b.Nombre).IsUnique();
+            entity.Property(b => b.Activa).HasDefaultValue(true);
+        });
+
+        // Configuración de Stock
+        modelBuilder.Entity<Stock>(entity =>
+        {
+            entity.HasIndex(s => new { s.IdProducto, s.IdBodega }).IsUnique();
+
+            entity.HasOne(s => s.Producto)
+                .WithMany()
+                .HasForeignKey(s => s.IdProducto)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(s => s.Bodega)
+                .WithMany(b => b.Stocks)
+                .HasForeignKey(s => s.IdBodega)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configuración de Bitacora
+        modelBuilder.Entity<Bitacora>(entity =>
+        {
+            entity.HasOne(b => b.Usuario)
+                .WithMany()
+                .HasForeignKey(b => b.IdUsuario)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
