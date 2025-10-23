@@ -30,6 +30,7 @@ public class BodegaService : IBodegaService
         return bodegas.Select(b => new BodegaDto
         {
             Id = b.Id,
+            Codigo = b.Codigo,
             Nombre = b.Nombre,
             Direccion = b.Direccion,
             Responsable = b.Responsable,
@@ -51,6 +52,7 @@ public class BodegaService : IBodegaService
         {
             Id = bodega.Id,
             Nombre = bodega.Nombre,
+            Codigo = bodega.Codigo,
             Direccion = bodega.Direccion,
             Responsable = bodega.Responsable,
             Telefono = bodega.Telefono,
@@ -69,6 +71,7 @@ public class BodegaService : IBodegaService
         {
             Id = b.Id,
             Nombre = b.Nombre,
+            Codigo = b.Codigo,
             Direccion = b.Direccion,
             Responsable = b.Responsable,
             Telefono = b.Telefono,

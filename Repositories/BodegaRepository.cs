@@ -89,8 +89,18 @@ public class BodegaRepository : IBodegaRepository
 
     public async Task<Bodega> Create(Bodega bodega)
     {
+
+        if (string.IsNullOrWhiteSpace(bodega.Codigo))
+        {
+            var ultimaBodega = await _context.Bodegas
+                .OrderByDescending(b => b.Id)
+                .FirstOrDefaultAsync();
+
+            var siguienteNumero = (ultimaBodega?.Id ?? 0) + 1;
+            bodega.Codigo = $"BOD-{siguienteNumero:D3}";
+        }
+
         bodega.FechaCreacion = DateTime.UtcNow;
-        bodega.FechaActualizacion = DateTime.UtcNow;
 
         _context.Bodegas.Add(bodega);
         await _context.SaveChangesAsync();
@@ -100,7 +110,7 @@ public class BodegaRepository : IBodegaRepository
 
     public async Task<Bodega> Update(Bodega bodega)
     {
-        bodega.FechaActualizacion = DateTime.UtcNow;
+
 
         _context.Bodegas.Update(bodega);
         await _context.SaveChangesAsync();
@@ -116,7 +126,7 @@ public class BodegaRepository : IBodegaRepository
 
         // Soft delete
         bodega.Activa = false;
-        bodega.FechaActualizacion = DateTime.UtcNow;
+
 
         await _context.SaveChangesAsync();
         return true;

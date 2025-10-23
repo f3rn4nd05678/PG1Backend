@@ -8,13 +8,14 @@ namespace ProyectoGraduación.DTOs;
 public class BodegaDto
 {
     public int Id { get; set; }
+    public string Codigo { get; set; } = string.Empty;  // ⬅️ AGREGAR ESTA LÍNEA
     public string Nombre { get; set; } = string.Empty;
     public string? Direccion { get; set; }
     public string? Responsable { get; set; }
     public string? Telefono { get; set; }
     public decimal? CapacidadM3 { get; set; }
     public bool Activa { get; set; }
-    public int TotalProductos { get; set; } // Calculado desde Stock
+    public int TotalProductos { get; set; }
     public DateTime FechaCreacion { get; set; }
 }
 
@@ -39,6 +40,7 @@ public class CrearBodegaDto
 
     [Range(0, double.MaxValue, ErrorMessage = "La capacidad debe ser un valor positivo")]
     public decimal? CapacidadM3 { get; set; }
+    public string? Codigo { get; set; }
 }
 
 /// <summary>
@@ -47,6 +49,7 @@ public class CrearBodegaDto
 public class ActualizarBodegaDto : CrearBodegaDto
 {
     public bool Activa { get; set; } = true;
+    public string? Codigo { get; set; }
 }
 
 /// <summary>

@@ -11,6 +11,11 @@ public class Bodega
     public int Id { get; set; }
 
     [Required]
+    [MaxLength(20)]
+    [Column("codigo")]
+    public string Codigo { get; set; } = string.Empty;
+
+    [Required]
     [MaxLength(100)]
     [Column("nombre")]
     public string Nombre { get; set; } = string.Empty;
@@ -36,8 +41,7 @@ public class Bodega
     [Column("fecha_creacion")]
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
-    [Column("fecha_actualizacion")]
-    public DateTime FechaActualizacion { get; set; } = DateTime.UtcNow;
+
 
     // Navegación
     public virtual ICollection<Stock> Stocks { get; set; } = new List<Stock>();
